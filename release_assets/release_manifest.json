@@ -1,0 +1,15 @@
+{
+  "release_family": "Existence Is Not Reachability / ReachScan",
+  "generated": "2026-06-21",
+  "products": [
+    {"name":"Core Research Article","version":"1.0-RC8","file":"existence_is_not_reachability_core_research_article_v1_0_rc8.pdf","sha256":"0a5c16f76e42f14b6c815418bdb617c97695af55e073c8c2d52face84bce1313"},
+    {"name":"Supplementary Evidence Appendix","version":"1.0-RC8","file":"existence_is_not_reachability_supplementary_evidence_appendix_v1_0_rc8.pdf","sha256":"5331c10a53f69f95927e523a4f65c5478da8275103e9014d95ddee35e681f33b"},
+    {"name":"Combined Core Article and Appendix","version":"1.0-RC8","file":"existence_is_not_reachability_core_article_complete_v1_0_rc8.pdf","sha256":"6b5f2c9684efdab96b6a4efcd8f2db90860343511a8639b020e752c7eb32a34b"},
+    {"name":"Core Article Source Bundle","version":"1.0-RC8","file":"existence_is_not_reachability_core_article_v1_0_rc8_source_bundle.zip","sha256":"4950e5a700d55ef5a2b5c2389e27f461ac4cd59391648ef6cc1615c9eba82df8"},
+    {"name":"Full Technical Report and Audit Record","version":"0.9.34","file":"existence_is_not_reachability_full_technical_report_v0_9_34.pdf","sha256":"06aa92bc761a340150ab19978b3f3e55036de4d56c442afdb6d3a2ed59d3a312"},
+    {"name":"Main Full Technical Report","version":"0.9.34","file":"existence_is_not_reachability_full_technical_report_main_v0_9_34.pdf","sha256":"2b3bfcf5ccda7a8774ffd44062b1fc4dc7632b08f17b0023f6b1fcf627439199"},
+    {"name":"Full Technical Report Audit Supplement","version":"0.9.34","file":"existence_is_not_reachability_full_technical_report_audit_supplement_v0_9_34.pdf","sha256":"0c9e1aac80c461ab37060d3acd40082bf0fd6d48ce3601fde3b9849e22f228de"},
+    {"name":"Full Technical Report Source Bundle","version":"0.9.34","file":"existence_is_not_reachability_full_technical_report_v0_9_34_source_bundle.zip","sha256":"ffa649ef5f67e75fa4b81771016633d9daed14d3bedbb6d9f42d09d5b6e9cbbb"},
+    {"name":"Evidence and Reproducibility Archive","version":"1.0-RC2","file":"reachscan_evidence_reproducibility_archive_v1_0_rc2.zip","sha256":"7e57539c7665ac58785bdf138f05036363eb71de97dd98594b9530bed9a1e899"}
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "title": "reachscan: a committed-prefix future-field measurement instrument",
+  "description": "Reusable instrument for measuring the future field of a committed reasoning prefix: target reachability, basin structure, and foreclosure under commitment. Ships a token-LLM source, reference projections, and a worked example. Sibling to the oracle-backed random 3-SAT constructive-accessibility instrument.",
+  "upload_type": "software",
+  "license": "Apache-2.0",
+  "access_right": "open",
+  "creators": [
+    {
+      "name": "Nothem, Michael Richard",
+      "affiliation": "Reachability Labs"
+    }
+  ],
+  "keywords": [
+    "AI evaluation",
+    "reasoning failure",
+    "chain-of-thought",
+    "reachability",
+    "future field",
+    "foreclosure",
+    "language models"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "10.5281/zenodo.19225548",
+      "relation": "isSupplementedBy",
+      "scheme": "doi"
+    }
+  ]
+}

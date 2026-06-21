@@ -1,0 +1,329 @@
+"""reachscan engine tests — provable correct with no GPU.
+
+Covers: contract conformance, the future-field math, target reachability,
+the per-depth-M plan (R1), the collision-free seed rule and no determinism
+collapse (R2), and the prompt-only f=0 row always being present.
+"""
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+
+from reachscan import (  # noqa: E402
+    DepthSpec,
+    ExactMatch,
+    ExtractedAnswer,
+    GeneratedPrefixSource,
+    ModuloProjection,
+    MockSource,
+    PrefixSource,
+    Projection,
+    SamplerPolicy,
+    TargetFiber,
+    TokenContinuationSource,
+    UserPrefixSource,
+    derive_seed,
+    reach_scan,
+    uniform_plan,
+)
+from reachscan.engine import shannon_entropy_bits, wilson_interval  # noqa: E402
+
+
+def test_contract_conformance():
+    """Mock/projections/prefix-sources honor their protocols (runtime_checkable)."""
+    assert isinstance(MockSource(), TokenContinuationSource)
+    assert isinstance(ModuloProjection(8, 4), Projection)
+    assert isinstance(ExactMatch(532), Projection)
+    assert isinstance(UserPrefixSource([1, 2], [3, 4]), PrefixSource)
+
+
+def test_seed_no_collision_high_M():
+    """R2: collision-free even far above the old 1000 stride."""
+    seeds = set()
+    for di in range(12):
+        for r in range(2000):
+            s = derive_seed(42, di, r)
+            assert s not in seeds, f"seed collision at depth {di} rollout {r}"
+            seeds.add(s)
+    assert len(seeds) == 12 * 2000
+
+
+def test_seed_distinct_within_depth():
+    """R2: M rollouts at one depth get M distinct seeds (no determinism collapse)."""
+    seeds = {derive_seed(7, 0, r) for r in range(256)}
+    assert len(seeds) == 256
+
+
+def test_mock_not_degenerate():
+    """R2 guard: the mock produces >1 distinct outcome at a depth (else the field
+    would be an artifactual point mass and the seed rule would be untested)."""
+    src = MockSource()
+    outcomes = set()
+    for r in range(64):
+        ids = src.sample_completion(src.encode_prompt("Q"), temperature=0.7,
+                                    top_p=1.0, max_new_tokens=16, seed=derive_seed(0, 0, r))
+        outcomes.add(src.decode(ids))
+    assert len(outcomes) > 1, "mock collapsed to a single outcome"
+
+
+def test_per_depth_M_plan():
+    """R1: a plan with different M per depth is honored exactly."""
+    src = MockSource()
+    ps = UserPrefixSource(src.encode_prompt("Problem: compute the sum"),
+                          src.encode_prompt("step one step two step three step four"))
+    proj = ModuloProjection(8, target_residue=4)
+    plan = [DepthSpec(0.0, 256), DepthSpec(0.5, 64), DepthSpec(1.0, 128)]
+    res = reach_scan(source=src, prefix_source=ps, projection=proj, plan=plan,
+                     rollout_sampler=SamplerPolicy(max_new_tokens=16), base_seed=1)
+    by_frac = {s.fraction: s for s in res.summaries}
+    assert by_frac[0.0].attempts == 256
+    assert by_frac[0.5].attempts == 64
+    assert by_frac[1.0].attempts == 128
+
+
+def test_prompt_only_row_always_present():
+    """The engine always includes f=0.0 even if the plan omits it."""
+    src = MockSource()
+    ps = UserPrefixSource(src.encode_prompt("Q"), src.encode_prompt("a b c d"))
+    proj = ModuloProjection(8, 4)
+    res = reach_scan(source=src, prefix_source=ps, projection=proj,
+                     plan=[DepthSpec(0.5, 8)], rollout_sampler=SamplerPolicy(max_new_tokens=16))
+    assert any(abs(s.fraction) < 1e-9 for s in res.summaries), "f=0 row missing"
+
+
+def test_future_field_sums_to_numeric():
+    """Field counts over OK answers must sum to the numeric (OK) count."""
+    src = MockSource()
+    ps = UserPrefixSource(src.encode_prompt("Q"), src.encode_prompt("a b c d e f"))
+    proj = ModuloProjection(8, 4)
+    res = reach_scan(source=src, prefix_source=ps, projection=proj,
+                     plan=uniform_plan([0.0, 0.5, 1.0], 32),
+                     rollout_sampler=SamplerPolicy(max_new_tokens=16))
+    for s in res.summaries:
+        assert sum(s.field.values()) == s.numeric
+
+
+def test_target_reachability_matches_field():
+    """R_T must equal target-bucket mass (project/is_target consistency)."""
+    src = MockSource()
+    ps = UserPrefixSource(src.encode_prompt("Q"), src.encode_prompt("a b c d"))
+    proj = ModuloProjection(8, target_residue=4)  # target bucket is residue 4
+    res = reach_scan(source=src, prefix_source=ps, projection=proj,
+                     plan=uniform_plan([0.0, 1.0], 64),
+                     rollout_sampler=SamplerPolicy(max_new_tokens=16))
+    for s in res.summaries:
+        mass_in_target_bucket = s.field.get(4, 0) / s.numeric if s.numeric else 0.0
+        assert abs(s.target_reachability - mass_in_target_bucket) < 1e-9
+
+
+def test_foreclosure_shape_detected():
+    """The engine should see target reachability DROP as commitment grows on the
+    mock (whose field drifts toward the basin). This is a toy analogue of the
+    paper's foreclosure, and it verifies the engine actually measures depth trend."""
+    src = MockSource(basin_value=56)  # 56 % 8 == 0, NOT the target residue 4
+    # Long trace so the drift has room to act.
+    ps = UserPrefixSource(src.encode_prompt("Problem"), src.encode_prompt("x" * 400))
+    proj = ModuloProjection(8, target_residue=4)
+    res = reach_scan(source=src, prefix_source=ps, projection=proj,
+                     plan=uniform_plan([0.0, 0.5, 1.0], 200),
+                     rollout_sampler=SamplerPolicy(max_new_tokens=16), base_seed=5)
+    rt = {s.fraction: s.target_reachability for s in res.summaries}
+    assert rt[0.0] >= rt[1.0], f"expected target reachability to fall: {rt}"
+
+
+def test_status_audit_excludes_nonok_from_field():
+    """no_answer / truncated answers count in the denominator audit but not the field."""
+    class EmptyProj:
+        name = "empty"
+        def extract(self, text):
+            return ExtractedAnswer(ExtractedAnswer.NO_ANSWER, None, text)
+        def project(self, a):
+            raise AssertionError("project called on non-ok answer")
+        def is_target(self, a):
+            raise AssertionError("is_target called on non-ok answer")
+    src = MockSource()
+    ps = UserPrefixSource(src.encode_prompt("Q"), src.encode_prompt("a b c"))
+    res = reach_scan(source=src, prefix_source=ps, projection=EmptyProj(),
+                     plan=[DepthSpec(0.0, 10)], rollout_sampler=SamplerPolicy(max_new_tokens=16))
+    s = res.summaries[0]
+    assert s.numeric == 0 and s.no_answer == 10 and s.field == {}
+
+
+def test_generated_prefix_source_roundtrip():
+    """GeneratedPrefixSource produces a non-empty frozen trace and runs."""
+    src = MockSource()
+    gps = GeneratedPrefixSource(src, "Problem: compute the sum",
+                                trace_sampler=SamplerPolicy(max_new_tokens=32), seed=3)
+    assert len(gps.reference_trace_ids()) > 0
+    res = reach_scan(source=src, prefix_source=gps, projection=ModuloProjection(8, 4),
+                     plan=uniform_plan([0.0, 0.5, 1.0], 16),
+                     rollout_sampler=SamplerPolicy(max_new_tokens=16))
+    assert len(res.summaries) == 3
+
+
+def test_wilson_and_entropy_helpers():
+    lo, hi = wilson_interval(50, 100)  # symmetric textbook case, p_hat = 0.5
+    assert 0.0 < lo < 0.5 < hi < 1.0
+    assert 0.38 < lo < 0.42 and 0.58 < hi < 0.62  # standard Wilson 95% interval
+    assert abs(shannon_entropy_bits([1, 1, 1, 1]) - 2.0) < 1e-9  # 4 equal buckets = 2 bits
+    assert shannon_entropy_bits([10]) == 0.0  # point mass = 0 bits
+
+
+
+
+def _mock_scan(basin):
+    from reachscan import (reach_scan, MockSource, GeneratedPrefixSource,
+                           ExactMatch, SamplerPolicy, uniform_plan)
+    src = MockSource(basin_value=basin)
+    pre = GeneratedPrefixSource(src, "p", trace_sampler=SamplerPolicy(max_new_tokens=40), seed=0)
+    return reach_scan(source=src, prefix_source=pre, projection=ExactMatch(532),
+                      plan=uniform_plan([0.0, 0.9, 1.0], 128),
+                      rollout_sampler=SamplerPolicy(max_new_tokens=16), base_seed=0)
+
+
+def test_source_separation_self_is_zero():
+    from reachscan import source_separation
+    r = _mock_scan(532)
+    for row in source_separation(r, r):
+        assert abs(row.separation) < 1e-9
+        assert row.sep_low <= 0.0 <= row.sep_high
+
+
+def test_source_separation_positive_at_depth():
+    from reachscan import source_separation
+    sep = source_separation(_mock_scan(532), _mock_scan(56))
+    deep = [row for row in sep if row.fraction >= 0.9]
+    assert deep and any(row.separation > 0 for row in deep)
+
+# ---------------------------------------------------------------------------
+# v0.2.1 additions
+# ---------------------------------------------------------------------------
+
+def test_sampler_policy_passes_through_plug():
+    """The engine must hand the FULL declared policy across the contract (P1)."""
+    seen = {}
+
+    class RecordingSource:
+        name = "recorder"
+        def encode_prompt(self, prompt, *, system=None):
+            return [1, 2, 3]
+        def decode(self, ids):
+            return "\\boxed{4}"
+        def sample_completion(self, input_ids, *, temperature, top_p, max_new_tokens,
+                              top_k=None, repetition_penalty=1.0,
+                              stop_token_ids=None, seed=None, **extras):
+            seen.update(temperature=temperature, top_p=top_p, top_k=top_k,
+                        repetition_penalty=repetition_penalty)
+            return [98, 111]
+
+    src = RecordingSource()
+    ps = UserPrefixSource([1, 2, 3], [5, 6, 7, 8])
+    pol = SamplerPolicy(temperature=0.6, top_p=0.9, top_k=10,
+                        repetition_penalty=1.1, max_new_tokens=8)
+    reach_scan(source=src, prefix_source=ps, projection=ModuloProjection(8, 4),
+               plan=[DepthSpec(1.0, 2)], rollout_sampler=pol, base_seed=3)
+    assert seen == {"temperature": 0.6, "top_p": 0.9, "top_k": 10,
+                    "repetition_penalty": 1.1}
+
+
+def test_cap_hit_flagged_and_counted():
+    """Generations that fill max_new_tokens are flagged in receipts and summed (P3)."""
+    src = MockSource()
+    ps = GeneratedPrefixSource(src, "p" * 40,
+                               trace_sampler=SamplerPolicy(max_new_tokens=40), seed=1)
+    res = reach_scan(source=src, prefix_source=ps, projection=ModuloProjection(8, 4),
+                     plan=[DepthSpec(1.0, 30)],
+                     rollout_sampler=SamplerPolicy(max_new_tokens=5), base_seed=1)
+    deep = res.summaries[-1]
+    assert deep.cap_hits == 30  # 5-char budget always fills
+    assert all(r.hit_token_cap for r in res.receipts if r.fraction == 1.0)
+    res2 = reach_scan(source=src, prefix_source=ps, projection=ModuloProjection(8, 4),
+                      plan=[DepthSpec(1.0, 30)],
+                      rollout_sampler=SamplerPolicy(max_new_tokens=64), base_seed=1)
+    assert res2.summaries[-1].cap_hits == 0
+
+
+def test_include_prompt_only_flag():
+    src = MockSource()
+    ps = GeneratedPrefixSource(src, "p" * 40,
+                               trace_sampler=SamplerPolicy(max_new_tokens=40), seed=2)
+    res = reach_scan(source=src, prefix_source=ps, projection=ModuloProjection(8, 4),
+                     plan=[DepthSpec(0.5, 4)], rollout_sampler=SamplerPolicy(max_new_tokens=16),
+                     base_seed=2, include_prompt_only=False)
+    assert [s.fraction for s in res.summaries] == [0.5]
+    assert res.manifest["include_prompt_only"] is False
+
+
+def test_committed_len_overrides_fraction():
+    """Contract v3 R5: near-terminal anchors are specifiable by COUNT (P7)."""
+    src = MockSource()
+    ps = GeneratedPrefixSource(src, "p" * 40,
+                               trace_sampler=SamplerPolicy(max_new_tokens=40), seed=3)
+    L = len(ps.reference_trace_ids())
+    res = reach_scan(source=src, prefix_source=ps, projection=ModuloProjection(8, 4),
+                     plan=[DepthSpec(0.999, 3, committed_len=L - 1), DepthSpec(1.0, 3)],
+                     rollout_sampler=SamplerPolicy(max_new_tokens=16), base_seed=3)
+    by_label = {round(s.fraction, 3): s.committed_len for s in res.summaries}
+    assert by_label[0.999] == L - 1 and by_label[1.0] == L
+
+
+def test_plan_validation_fails_loud():
+    src = MockSource()
+    ps = GeneratedPrefixSource(src, "p" * 40,
+                               trace_sampler=SamplerPolicy(max_new_tokens=40), seed=4)
+    for bad in ([DepthSpec(1.5, 4)], [DepthSpec(-0.1, 4)], [DepthSpec(0.5, 0)],
+                [DepthSpec(0.5, 4, committed_len=10_000)]):
+        try:
+            reach_scan(source=src, prefix_source=ps, projection=ModuloProjection(8, 4),
+                       plan=bad, rollout_sampler=SamplerPolicy(max_new_tokens=16), base_seed=4)
+            assert False, f"plan {bad} should have raised"
+        except ValueError:
+            pass
+
+
+def test_exact_match_non_integer_truth():
+    em = ExactMatch("5/8")
+    a = em.extract("the final answer is \\boxed{5/8}")
+    assert a.is_ok and em.is_target(a) and em.project(a) == "5/8"
+    em2 = ExactMatch("0532")  # int-like truths canonicalize
+    b = em2.extract("\\boxed{532}")
+    assert em2.is_target(b) and em2.project(b) == "532"
+
+
+def test_manifest_records_every_named_input():
+    src = MockSource()
+    ps = GeneratedPrefixSource(src, "p" * 40,
+                               trace_sampler=SamplerPolicy(max_new_tokens=40), seed=11)
+    res = reach_scan(source=src, prefix_source=ps, projection=ModuloProjection(8, 4),
+                     plan=[DepthSpec(0.5, 2)], rollout_sampler=SamplerPolicy(max_new_tokens=16),
+                     base_seed=11, stop_token_ids=[7, 9])
+    m = res.manifest
+    assert m["stop_token_ids"] == [7, 9]
+    assert m["prefix_source_provenance"]["trace_seed"] == 11
+    assert m["rollout_sampler"]["top_k"] is None
+    assert m["rollout_sampler"]["repetition_penalty"] == 1.0
+
+
+# ----------------------------------------------------------------------------
+# Self-runner. KEEP THIS BLOCK AT THE END OF THE FILE: it collects only the
+# tests defined ABOVE it. In v0.2.0 it sat mid-file and `python
+# tests/test_engine.py` silently ran 12 of the tests while reporting success;
+# pytest/CI collect by name and were unaffected. The count line below makes
+# under-collection visible if this ever regresses.
+# ----------------------------------------------------------------------------
+if __name__ == "__main__":
+    import traceback
+    tests = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
+    passed = 0
+    for t in tests:
+        try:
+            t()
+            print(f"  PASS  {t.__name__}")
+            passed += 1
+        except Exception:
+            print(f"  FAIL  {t.__name__}")
+            traceback.print_exc()
+    print(f"\n{passed}/{len(tests)} passed")
+    sys.exit(0 if passed == len(tests) else 1)

@@ -1,0 +1,65 @@
+{
+  "_framework": "Reachability Labs reachscan v0.2.1",
+  "_framework_tag": "Nothem Reachability / reach-scan instrument v0.2.1",
+  "_citation": "If you use this instrument or the reach-scan measurement framing, please cite M.R. Nothem (2026), Reachability Labs, and the associated paper.",
+  "_usage_notice": "Apache-2.0. Provided as a reusable measurement instrument. The shipped sources/projections are clean reference implementations, not a production extraction pipeline. For inquiries contact mnothem@reachabilitylabs.org.",
+  "_generated_utc": "2026-06-12T01:24:59.602103+00:00",
+  "run_manifest": {
+    "engine_schema": "0.2.1",
+    "source": "mock_source_v2",
+    "sampler_semantics": null,
+    "prefix_source": "generated_trace",
+    "prefix_source_provenance": {
+      "kind": "generated",
+      "trace_seed": 0,
+      "trace_sampler": {
+        "temperature": 0.7,
+        "top_p": 1.0,
+        "top_k": null,
+        "repetition_penalty": 1.0,
+        "max_new_tokens": 160
+      },
+      "system": null
+    },
+    "projection": "mod_8",
+    "trace_len": 150,
+    "base_seed": 0,
+    "rollout_sampler": {
+      "temperature": 0.7,
+      "top_p": 1.0,
+      "top_k": null,
+      "repetition_penalty": 1.0,
+      "max_new_tokens": 16
+    },
+    "stop_token_ids": null,
+    "include_prompt_only": true,
+    "plan": [
+      {
+        "fraction": 0.0,
+        "rollouts": 128,
+        "committed_len": null
+      },
+      {
+        "fraction": 0.25,
+        "rollouts": 128,
+        "committed_len": null
+      },
+      {
+        "fraction": 0.5,
+        "rollouts": 128,
+        "committed_len": null
+      },
+      {
+        "fraction": 0.75,
+        "rollouts": 128,
+        "committed_len": null
+      },
+      {
+        "fraction": 1.0,
+        "rollouts": 128,
+        "committed_len": null
+      }
+    ],
+    "seed_rule": "sha256(base_seed|depth_index|rollout_index)[:8]; seeds in [0, 2**64)"
+  }
+}

@@ -1,0 +1,14 @@
+reachscan
+Copyright 2026 Michael R. Nothem / Reachability Labs
+https://reachabilitylabs.org
+
+This software implements the reach-scan measurement framing: estimating the
+future field of a committed reasoning prefix and its target reachability,
+developed at Reachability Labs and described in the associated paper(s).
+
+The reach-scan procedure, the source/prefix/projection contract design, and the
+foreclosure/target-reachability framing are original contributions of
+Reachability Labs.
+
+If you use this instrument or build on the contract, please cite the associated
+paper. This is attribution guidance, not a restriction beyond Apache-2.0.

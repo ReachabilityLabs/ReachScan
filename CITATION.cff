@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+title: "reachscan: a committed-prefix future-field measurement instrument"
+message: "If you use this software or the reach-scan measurement framing, please cite the associated paper and this repository."
+type: software
+authors:
+  - family-names: Nothem
+    given-names: Michael Richard
+license: Apache-2.0
+version: 0.2.2
+url: "https://github.com/ReachabilityLabs/ReachScan"
