@@ -306,6 +306,101 @@ def test_manifest_records_every_named_input():
     assert m["rollout_sampler"]["repetition_penalty"] == 1.0
 
 
+# ---------------------------------------------------------------------------
+# v0.2.3 additions (coherence-review hardening)
+# ---------------------------------------------------------------------------
+
+def test_projection_consistency_violation_raises():
+    """A projection that puts target and non-target answers in ONE bucket must
+    fail loud (binding consistency rule), not silently corrupt R_T."""
+    class AltSource:
+        name = "alt"
+        def __init__(self): self.n = 0
+        def encode_prompt(self, prompt, *, system=None): return [0]
+        def decode(self, ids): return "A" if list(ids) == [0] else "B"
+        def sample_completion(self, input_ids, *, temperature, top_p, max_new_tokens,
+                              top_k=None, repetition_penalty=1.0,
+                              stop_token_ids=None, seed=None, **extras):
+            self.n += 1
+            return [0] if self.n % 2 == 1 else [1]
+
+    class BadProj:
+        name = "bad_one_bucket"
+        def extract(self, text):
+            return ExtractedAnswer(ExtractedAnswer.OK, text, text)
+        def project(self, a):
+            return "BUCKET"            # everything in one bucket
+        def is_target(self, a):
+            return a.value == "A"      # ...but target depends on value -> inconsistent
+
+    src = AltSource()
+    ps = UserPrefixSource([0], [0, 0, 0, 0])
+    try:
+        reach_scan(source=src, prefix_source=ps, projection=BadProj(),
+                   plan=[DepthSpec(1.0, 8)], rollout_sampler=SamplerPolicy(max_new_tokens=16),
+                   base_seed=0)
+        assert False, "expected projection consistency violation to raise"
+    except ValueError:
+        pass
+
+
+def test_sampler_policy_validation():
+    """Malformed decode policies fail at construction, before any measurement."""
+    SamplerPolicy()  # defaults are valid
+    bad = (dict(temperature=-0.1), dict(top_p=0.0), dict(top_p=1.5),
+           dict(top_k=0), dict(repetition_penalty=0.0), dict(max_new_tokens=0))
+    for kwargs in bad:
+        try:
+            SamplerPolicy(**kwargs)
+            assert False, f"SamplerPolicy({kwargs}) should have raised"
+        except ValueError:
+            pass
+
+
+def test_manifest_records_resolved_committed_len_and_package_version():
+    from reachscan import __version__
+    src = MockSource()
+    ps = GeneratedPrefixSource(src, "p" * 40,
+                               trace_sampler=SamplerPolicy(max_new_tokens=40), seed=11)
+    L = len(ps.reference_trace_ids())
+    res = reach_scan(source=src, prefix_source=ps, projection=ModuloProjection(8, 4),
+                     plan=[DepthSpec(0.5, 2), DepthSpec(0.999, 2, committed_len=L - 1)],
+                     rollout_sampler=SamplerPolicy(max_new_tokens=16), base_seed=11)
+    by_frac = {round(p["fraction"], 3): p for p in res.manifest["plan"]}
+    # fractional row: raw override is None, resolved is the rounded count
+    assert by_frac[0.5]["committed_len"] is None
+    assert by_frac[0.5]["resolved_committed_len"] == round(0.5 * L)
+    # override row: raw and resolved both equal the explicit count
+    assert by_frac[0.999]["committed_len"] == L - 1
+    assert by_frac[0.999]["resolved_committed_len"] == L - 1
+    assert res.manifest["package_version"] == __version__
+
+
+def test_summary_ok_answers_aliases_numeric():
+    src = MockSource()
+    ps = UserPrefixSource(src.encode_prompt("Q"), src.encode_prompt("a b c d"))
+    res = reach_scan(source=src, prefix_source=ps, projection=ModuloProjection(8, 4),
+                     plan=uniform_plan([0.0, 1.0], 16),
+                     rollout_sampler=SamplerPolicy(max_new_tokens=16))
+    for s in res.summaries:
+        assert s.ok_answers == s.numeric
+
+
+def test_source_separation_requires_same_plan():
+    from reachscan import source_separation
+    a = _mock_scan(532)  # plan fractions [0.0, 0.9, 1.0]
+    src = MockSource(basin_value=56)
+    pre = GeneratedPrefixSource(src, "p", trace_sampler=SamplerPolicy(max_new_tokens=40), seed=0)
+    b = reach_scan(source=src, prefix_source=pre, projection=ExactMatch(532),
+                   plan=uniform_plan([0.0, 0.5, 1.0], 128),  # different middle depth
+                   rollout_sampler=SamplerPolicy(max_new_tokens=16), base_seed=0)
+    try:
+        source_separation(a, b)
+        assert False, "expected mismatched depth plans to raise"
+    except ValueError:
+        pass
+
+
 # ----------------------------------------------------------------------------
 # Self-runner. KEEP THIS BLOCK AT THE END OF THE FILE: it collects only the
 # tests defined ABOVE it. In v0.2.0 it sat mid-file and `python

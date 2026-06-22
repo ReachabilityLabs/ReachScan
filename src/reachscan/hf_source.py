@@ -86,6 +86,9 @@ class HuggingFaceSource:
         inp = torch.tensor([list(input_ids)], device=self._model.device)
         attn = torch.ones_like(inp)
         eos = list(stop_token_ids) if stop_token_ids else self._tok.eos_token_id
+        # Preserve a valid pad id of 0 (truthiness check would wrongly drop it).
+        pad_id = (self._tok.pad_token_id if self._tok.pad_token_id is not None
+                  else self._tok.eos_token_id)
         gen_cfg = GenerationConfig(
             do_sample=temperature > 0,
             temperature=max(temperature, 1e-5),
@@ -94,7 +97,7 @@ class HuggingFaceSource:
             repetition_penalty=float(repetition_penalty),
             max_new_tokens=max_new_tokens,
             eos_token_id=eos,
-            pad_token_id=self._tok.pad_token_id or self._tok.eos_token_id,
+            pad_token_id=pad_id,
         )
         with torch.no_grad():
             out = self._model.generate(inp, attention_mask=attn, generation_config=gen_cfg)

@@ -50,9 +50,9 @@ def main() -> None:
                         base_seed=args.seed)
     out = write_result(result, Path(args.out))
 
-    print(f"\n{'depth':>6} {'M':>5} {'numeric':>7} {'R_T':>6} {'dom':>5} {'dom_mass':>8} {'entropy':>7}")
+    print(f"\n{'depth':>6} {'M':>5} {'ok':>7} {'R_T':>6} {'dom':>5} {'dom_mass':>8} {'entropy':>7}")
     for s in result.summaries:
-        print(f"{s.fraction:>6.2f} {s.attempts:>5} {s.numeric:>7} {s.target_reachability:>6.3f} "
+        print(f"{s.fraction:>6.2f} {s.attempts:>5} {s.ok_answers:>7} {s.target_reachability:>6.3f} "
               f"{str(s.dominant_bucket):>5} {s.dominant_mass:>8.3f} {s.answer_field_entropy:>7.3f}")
     print(f"\n[done] artifacts written to {out}/")
 

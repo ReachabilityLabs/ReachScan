@@ -1,5 +1,48 @@
 # Changelog
 
+## 0.2.3 — 2026-06-22 (coherence-review hardening; all changes backward-compatible)
+
+A second independent cross-review of the v0.2.2 package found small public-facing
+coherence gaps and a real contract-leakage point. Every change below is additive
+to the contract surface; nothing a v0.2.2 caller did breaks.
+
+**Contract / measurement integrity**
+- The binding `Projection` consistency rule (if two answers share a `project()`
+  bucket they MUST share the same `is_target()`) is now ENFORCED by the engine in
+  a single pass. A custom projection that violates it raises `ValueError` (loud and
+  local) instead of silently producing incoherent target reachability.
+- `SamplerPolicy` validates on construction (`__post_init__`): `temperature >= 0`,
+  `top_p in (0, 1]`, `top_k None or >= 1`, `repetition_penalty > 0`,
+  `max_new_tokens >= 1`. Malformed decode policies fail before reaching a model.
+- `source_separation` now enforces what it documents: both scans must share the
+  same ORDERED depth plan (fraction AND resolved `committed_len`), not merely the
+  same rounded fractions.
+
+**Named-inputs completeness**
+- Run manifest plan rows gain `resolved_committed_len` (the actual committed-token
+  count used at each depth), alongside the raw `committed_len` override field.
+- Run manifest records `package_version` (the release) distinct from
+  `engine_schema` (the manifest schema). `engine_schema` is bumped to `0.2.3`
+  because the plan rows changed.
+
+**Terminology (floor-sum vocabulary removed from the general surface)**
+- `DepthSummary` gains `ok_answers` (= `status == "ok"` count). `numeric` is kept
+  as a legacy alias. The summary CSV writes both columns; the CLI header reads `ok`.
+- `SeparationRow` gains `ok_correct` / `ok_wrong` aliases for
+  `numeric_correct` / `numeric_wrong`.
+
+**Reference adapter**
+- `HuggingFaceSource` no longer drops a valid `pad_token_id` of `0` (the truthiness
+  fallback wrongly replaced `0` with EOS).
+
+**Artifacts / metadata**
+- Shipped `examples/demo_run/` regenerated with the v0.2.3 code (the v0.2.2
+  artifacts were still stamped `v0.2.1`).
+- `.zenodo.json` relation to the SAT predecessor changed from `isSupplementedBy`
+  to `references` (the SAT record is prior related work, not a supplement to this).
+- README scope wording softened (the non-included research tooling is described by
+  where it lives, not as "held privately").
+
 ## 0.2.2 — 2026-06-11 (pre-push fixes from an independent cross-review)
 
 - **Test self-runner moved to the end of the file.** It previously sat

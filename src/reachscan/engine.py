@@ -75,7 +75,8 @@ class DepthSummary:
     fraction: float
     committed_len: int
     attempts: int
-    numeric: int                 # status == ok count (the denominator audit)
+    ok_answers: int              # status == "ok" extracted answers (the R_T denominator)
+    numeric: int                 # legacy alias of ok_answers (v0.2.x); NOT necessarily numeric values
     truncated: int               # source-flagged truncations (needs a finish-reason-capable source)
     cap_hits: int                # engine-flagged: len(new tokens) >= max_new_tokens
     no_answer: int
@@ -125,7 +126,7 @@ def shannon_entropy_bits(counts: Sequence[int]) -> float:
 # --------------------------------------------------------------------------
 # The engine
 # --------------------------------------------------------------------------
-_ENGINE_SCHEMA_VERSION = "0.2.1"
+_ENGINE_SCHEMA_VERSION = "0.2.3"  # bumped: manifest plan rows gain resolved_committed_len
 
 
 def reach_scan(
@@ -218,8 +219,10 @@ def reach_scan(
                              cap_hits=sum(cap_flags))
         )
 
+    from . import __version__ as _pkg_version  # local import: avoid import-order fragility
     result.manifest = {
         "engine_schema": _ENGINE_SCHEMA_VERSION,
+        "package_version": _pkg_version,
         "source": getattr(source, "name", "unknown"),
         "sampler_semantics": getattr(source, "sampler_semantics", None),
         "prefix_source": getattr(prefix_source, "name", "unknown"),
@@ -231,7 +234,11 @@ def reach_scan(
         "stop_token_ids": list(stop_token_ids) if stop_token_ids else None,
         "include_prompt_only": include_prompt_only,
         "plan": [{"fraction": d.fraction, "rollouts": d.rollouts,
-                  "committed_len": d.committed_len} for d in full_plan],
+                  "committed_len": d.committed_len,
+                  "resolved_committed_len": (
+                      d.committed_len if d.committed_len is not None
+                      else round(d.fraction * L))}
+                 for d in full_plan],
         "seed_rule": "sha256(base_seed|depth_index|rollout_index)[:8]; seeds in [0, 2**64)",
     }
     return result
@@ -250,9 +257,28 @@ def _summarize_depth(
     truncated = sum(1 for a in answers if a.status == ExtractedAnswer.TRUNCATED)
     no_answer = sum(1 for a in answers if a.status == ExtractedAnswer.NO_ANSWER)
 
-    # Future field: distribution over buckets among OK answers only.
-    field_counter: Counter = Counter(projection.project(a) for a in ok)
-    target_count = sum(1 for a in ok if projection.is_target(a))
+    # Future field: distribution over buckets among OK answers only. Single pass
+    # ENFORCES the binding Projection consistency rule (contracts.py): a bucket
+    # must not hold both target and non-target answers, or target reachability
+    # would be incoherent. A bad custom projection fails loud and local here.
+    field_counter: Counter = Counter()
+    bucket_targets: dict[Hashable, bool] = {}
+    target_count = 0
+    _missing = object()
+    for a in ok:
+        bucket = projection.project(a)
+        is_tgt = projection.is_target(a)
+        previous = bucket_targets.get(bucket, _missing)
+        if previous is not _missing and previous != is_tgt:
+            raise ValueError(
+                "Projection consistency violation: bucket "
+                f"{bucket!r} contains both target and non-target answers "
+                f"(projection={getattr(projection, 'name', projection)!r}). "
+                "is_target must be a property of project()'s bucket."
+            )
+        bucket_targets[bucket] = is_tgt
+        field_counter[bucket] += 1
+        target_count += int(is_tgt)
     numeric = len(ok)
     r_t = (target_count / numeric) if numeric > 0 else 0.0
 
@@ -269,6 +295,7 @@ def _summarize_depth(
         fraction=spec.fraction,
         committed_len=committed_len,
         attempts=attempts,
+        ok_answers=numeric,
         numeric=numeric,
         truncated=truncated,
         cap_hits=cap_hits,

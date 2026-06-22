@@ -17,7 +17,7 @@ This is the language-model sibling of the oracle-backed random 3-SAT
 The two share a measurement grammar (committed state → reachable future); the
 substrates and guarantees differ.
 
-> Status: v0.2.2. The engine and reference components are tested. The worked example
+> Status: v0.2.3. The engine and reference components are tested. The worked example
 > reproduces the *shape* of the flagship result on a mock or a small live model; it
 > is not a release of production data.
 
@@ -54,7 +54,7 @@ reports, per depth:
 - **dominant basin** and its mass — where the field concentrates
 - **answer-field entropy** — a target-*neutral* dispersion statistic (distinct from
   target reachability, which is target-*relative*)
-- **numeric yield / truncation / cap-hits** — the denominator audit (`hit_token_cap` flags every generation that filled `max_new_tokens`)
+- **answer yield / truncation / cap-hits** — the denominator audit (`hit_token_cap` flags every generation that filled `max_new_tokens`). Reported as `ok_answers`; the legacy `numeric` column is kept as an alias in v0.2.x and means `status == "ok"` extracted answers, not necessarily numeric values.
 - **Wilson intervals** on the rates
 
 ### Formal object
@@ -80,9 +80,11 @@ HuggingFace adapter, a custom-projection example, and a quickstart notebook — 
 understand the method and run a basic scan on your own model and task.
 
 This is the measurement **core**, not the paper's full reproduction workflow. It does
-**not** include candidate mining, exposure auditing, grouped correct/wrong-source scans,
-per-trace bootstrap, foreclosure localization, or intervention — those are active
-research components, held privately.
+**not** include candidate mining, exposure auditing, grouped correct/wrong-source
+scans, per-trace bootstrap, foreclosure localization, or intervention. The
+current-paper evidence and constructors are released through the Evidence and
+Reproducibility Archive; additional research tooling is outside this software
+release.
 
 ## How it works: three contracts + an engine
 
@@ -231,4 +233,4 @@ requested per the NOTICE, not restricted beyond Apache-2.0.
 
 This software is one component of the *Existence Is Not Reachability* publication family. The concise paper states the central scientific result; the Full Technical Report contains the complete argument and audit record; the Evidence and Reproducibility Archive contains the canonical evidence and constructors. See `docs/PRODUCT_ARCHITECTURE.md` and `release_assets/release_manifest.json`.
 
-Archive v1.0-RC2 includes complete per-rollout R006 repaired-path evidence. The reusable software remains v0.2.2 because the new deposit completes evidence rather than changing the public measurement API.
+Archive v1.0-RC2 includes complete per-rollout R006 repaired-path evidence. The reusable software is v0.2.3: a backward-compatible hardening release on top of the v0.2.2 core (see `CHANGELOG.md`); every prior caller still works.

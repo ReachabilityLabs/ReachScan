@@ -66,6 +66,20 @@ class SamplerPolicy:
     repetition_penalty: float = 1.0
     max_new_tokens: int = 512
 
+    def __post_init__(self) -> None:
+        # Fail-loud: a malformed decode policy must never reach a model adapter.
+        if self.temperature < 0:
+            raise ValueError(f"temperature must be >= 0; got {self.temperature}")
+        if not (0 < self.top_p <= 1):
+            raise ValueError(f"top_p must be in (0, 1]; got {self.top_p}")
+        if self.top_k is not None and self.top_k < 1:
+            raise ValueError(f"top_k must be None or >= 1; got {self.top_k}")
+        if self.repetition_penalty <= 0:
+            raise ValueError(
+                f"repetition_penalty must be > 0; got {self.repetition_penalty}")
+        if self.max_new_tokens < 1:
+            raise ValueError(f"max_new_tokens must be >= 1; got {self.max_new_tokens}")
+
 
 # --------------------------------------------------------------------------
 # Contract 1 — TokenContinuationSource

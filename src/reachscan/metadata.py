@@ -12,8 +12,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict
 
-FRAMEWORK_NAME = "Reachability Labs reachscan v0.2.2"
-FRAMEWORK_TAG = "Nothem Reachability / reach-scan instrument v0.2.2"
+FRAMEWORK_NAME = "Reachability Labs reachscan v0.2.3"
+FRAMEWORK_TAG = "Nothem Reachability / reach-scan instrument v0.2.3"
 CITATION_TEXT = (
     "If you use this instrument or the reach-scan measurement framing, please cite "
     "M.R. Nothem (2026), Reachability Labs, and the associated paper."
@@ -68,7 +68,8 @@ def write_result(result, outdir: str | Path) -> Path:
             "fraction": s.fraction,
             "committed_len": s.committed_len,
             "attempts": s.attempts,
-            "numeric": s.numeric,
+            "ok_answers": s.ok_answers,
+            "numeric": s.numeric,  # legacy alias of ok_answers; kept for v0.2.x compatibility
             "truncated": s.truncated,
             "cap_hits": s.cap_hits,
             "no_answer": s.no_answer,

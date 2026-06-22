@@ -29,9 +29,11 @@ class SeparationRow:
     sep_low: float         # Newcombe difference CI (from each scan's Wilson bounds)
     sep_high: float
     attempts_correct: int   # rollouts attempted
-    numeric_correct: int    # OK/numeric answers = the R_T denominator
+    ok_correct: int         # OK answers = the R_T denominator
+    numeric_correct: int    # legacy alias of ok_correct (v0.2.x)
     attempts_wrong: int
-    numeric_wrong: int
+    ok_wrong: int
+    numeric_wrong: int      # legacy alias of ok_wrong (v0.2.x)
 
 
 @dataclass
@@ -47,18 +49,23 @@ def source_separation(correct: ReachScanResult, wrong: ReachScanResult) -> Separ
 
     The interval is Newcombe's (1998) hybrid-score interval for a difference of two
     proportions, built from each scan's Wilson interval — no new assumptions, no
-    extra dependencies. Both scans must share the same depth plan.
+    extra dependencies.
+
+    Both scans must share the SAME ORDERED depth plan: same sequence of
+    (fraction, committed_len). This is enforced — matching only rounded fractions
+    would silently compare scans that differ in resolved committed length, order,
+    or duplicate labels.
     """
-    wmap = {round(s.fraction, 6): s for s in wrong.summaries}
+    correct_keys = [(round(s.fraction, 6), s.committed_len) for s in correct.summaries]
+    wrong_keys = [(round(s.fraction, 6), s.committed_len) for s in wrong.summaries]
+    if correct_keys != wrong_keys:
+        raise ValueError(
+            "correct and wrong scans must share the same ordered depth plan "
+            "(fraction and committed_len); run both on the same plan"
+        )
+
     rows: list[SeparationRow] = []
-    for ca in correct.summaries:
-        key = round(ca.fraction, 6)
-        if key not in wmap:
-            raise ValueError(
-                f"depth {ca.fraction} is not present in both scans; "
-                "run correct-source and wrong-source on the same plan"
-            )
-        wb = wmap[key]
+    for ca, wb in zip(correct.summaries, wrong.summaries):
         p1, p2 = ca.target_reachability, wb.target_reachability
         d = p1 - p2
         lo = d - math.sqrt((p1 - ca.wilson_target_low) ** 2 + (wb.wilson_target_high - p2) ** 2)
@@ -66,7 +73,7 @@ def source_separation(correct: ReachScanResult, wrong: ReachScanResult) -> Separ
         rows.append(SeparationRow(
             fraction=ca.fraction, r_t_correct=p1, r_t_wrong=p2, separation=d,
             sep_low=lo, sep_high=hi,
-            attempts_correct=ca.attempts, numeric_correct=ca.numeric,
-            attempts_wrong=wb.attempts, numeric_wrong=wb.numeric,
+            attempts_correct=ca.attempts, ok_correct=ca.ok_answers, numeric_correct=ca.numeric,
+            attempts_wrong=wb.attempts, ok_wrong=wb.ok_answers, numeric_wrong=wb.numeric,
         ))
     return SeparationCurve(rows)
