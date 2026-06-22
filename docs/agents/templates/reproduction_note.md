@@ -2,6 +2,9 @@
 
 > Fill every field from the run's `run_manifest.json` and `summary_by_depth.csv`.
 > If a value isn't traceable to a named input in the manifest, do not report it.
+> This note is an **interpretation layer**: recompute every number from
+> `receipts.csv` / `summary_by_depth.csv` / `run_manifest.json` — never copy it
+> from generated prose (a plot caption, a ledger cell, an agent summary).
 
 ## What was measured
 - **Source:** <e.g. hf:Org/Model@revision  —  or MOCK FIXTURE (not a result)>

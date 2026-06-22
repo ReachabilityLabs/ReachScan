@@ -2,6 +2,18 @@
 
 ## Unreleased — docs / infrastructure only (no change to the installable package)
 
+- **Honesty contract gains an evidence-hierarchy rule:** raw artifacts
+  (`receipts.csv` / `summary_by_depth.csv` / `run_manifest.json`) are
+  authoritative; generated prose (ledgers, READMEs, plot captions, notebook
+  markdown, agent summaries) is provisional. Every interpretive claim must be
+  recomputed from the raw rows — never summarize a summary. Added to `AGENTS.md`,
+  the operator guide (with a "verify before you conclude" checklist), all three
+  per-tool adapters, and the ledger/reproduction-note templates. This guards
+  against generated narrative becoming accidental authority.
+- **Cross-model experiment scaffold (pre-run):** `docs/experiments/`
+  (predeclared Llama-3.1-8B floor-sum recipe + run ledger) and
+  `examples/openweights_floor_sum/` (README + `reproject_mod8.py`); the quickstart
+  notebook generalized to any open-weights autoregressive model.
 - **Agent-onboarding layer added.** A dialect-neutral operator guide
   (`docs/agents/reachscan-operator.md`) plus thin per-tool adapters: `AGENTS.md`
   (shared baseline, read by Codex/Cursor and other AGENTS.md-aware tools),

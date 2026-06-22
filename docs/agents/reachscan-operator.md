@@ -26,9 +26,26 @@ black-box behavioral measurement, **not** a probe of model internals.
   are earned by replication, not asserted.
 - **No internal-state claims.** The field is over outputs; it says nothing about
   activations or hidden state.
+- **Raw artifacts are authoritative; generated prose is provisional.**
+  `receipts.csv` is primary, `summary_by_depth.csv` is derived (but inspectable),
+  `run_manifest.json` is provenance. Ledgers, READMEs, plot captions, notebook
+  markdown, and *any* agent-written narrative are interpretation — never evidence.
+  **Recompute every interpretive claim from the raw rows before writing it; never
+  summarize a summary.**
 
 If a request would require breaking one of these (e.g. "prove the model can never
 recover"), surface the limit plainly instead of complying.
+
+### Verify before you conclude (recompute from raw rows)
+Before writing *any* interpretive statement about a run, recompute it from the
+artifacts — do not trust generated narrative (including your own earlier prose):
+1. Count `ok_answers` directly from `receipts.csv` (`status == "ok"`, per depth).
+2. Recompute `R_T = target_count / ok_answers` per depth.
+3. Check cap-hits and no-answer rows — is the yield trustworthy at all?
+4. Inspect the dominant buckets from the receipts, not from a summary.
+5. Verify model / revision / seed / sampler from `run_manifest.json`.
+6. Check whether the answer was exposed in the committed trace (late depths).
+7. Only then write prose — and mark it as interpretation, not evidence.
 
 ## Workflow
 

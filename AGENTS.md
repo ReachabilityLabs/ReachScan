@@ -24,6 +24,9 @@ per-tool wrappers: `.claude/skills/` (Claude Code), `.agents/skills/` (Codex),
 4. **Two tasks in one model is not generality.** Cross-model/task claims are
    earned by replication, not asserted.
 5. **No internal-state claims.** The field is over outputs only.
+6. **Raw artifacts are authoritative; generated prose is provisional.** Recompute
+   every claim from `receipts.csv` / `summary_by_depth.csv` / `run_manifest.json`
+   before writing it — never summarize a summary.
 
 ## Install
 ```bash

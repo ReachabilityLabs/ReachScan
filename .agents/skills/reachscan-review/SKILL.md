@@ -23,6 +23,9 @@ the canonical operator guide — read it for the full workflow:
 3. Every measurement is sampler-relative and projection-relative.
 4. Two tasks in one model is **not** generality.
 5. No claims about model internals — the field is over outputs only.
+6. Raw artifacts (`receipts.csv` / `summary_by_depth.csv` / `run_manifest.json`)
+   are authoritative; generated prose is provisional — recompute claims from the
+   raw rows before writing them, never summarize a summary.
 
 ## Operate
 1. **Preflight:** confirm repo root (`pyproject.toml`, `src/reachscan/`); if
