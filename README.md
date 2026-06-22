@@ -179,7 +179,7 @@ own sources, and that apparatus is not included here.
 - **Reference extractor.** The shipped `extract` prefers the last `\boxed{...}`,
   strips thousands-commas, and otherwise looks for an explicit answer cue. It does
   not parse scientific notation, units, or symbolic answers, and the no-box
-  fallback (last number) is unreliable. Watch the numeric-yield column, and for
+  fallback (last number) is unreliable. Watch the answer-yield column (`ok_answers`), and for
   other answer formats supply your own `extract`. This is a reference component,
   not a production extractor.
 - **Cost.** Rollouts are generated one at a time for per-seed reproducibility, so
