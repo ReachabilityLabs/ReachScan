@@ -13,12 +13,15 @@
 - **Projection constructors validate their domain:** `ModuloProjection` and
   `TargetFiber` reject modulus ≤ 0 and normalize `target_residue` mod the modulus
   (no more divide-by-zero or silently-unreachable targets).
-- **Summary CSV gains `rate_defined` and a JSON-serialized `field` column** (the
-  full future field — previously documented but not written). `engine_schema`
-  bumped to `0.2.4`. A mocked-`transformers` test now exercises the HuggingFace
-  adapter's generation-config construction without downloading weights.
+- **Summary CSV gains `rate_defined` and a `field` column** serialized as a JSON
+  array of `[bucket, count]` pairs (robust to non-scalar bucket keys such as
+  tuples — a plain object dump would crash for a valid custom projection;
+  previously documented but not written). `engine_schema` bumped to `0.2.4`. A
+  mocked-`transformers` test now exercises the HuggingFace adapter's
+  generation-config construction without downloading weights.
 - README formal object now conditions `R_T` on a valid extraction and defines
-  answer yield explicitly.
+  answer yield explicitly — and clarifies that cap-hits are flagged
+  *independently* (a capped generation that still parses is counted, not excluded).
 
 **Also in this release (docs / infrastructure since 0.2.3)**
 - **Honesty contract gains an evidence-hierarchy rule:** raw artifacts

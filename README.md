@@ -70,8 +70,10 @@ R_T(f) = P( extract(Y) ∈ T | extract(Y) defined, committed prefix s_f, declare
 ```
 
 The denominator is the **answer yield** — rollouts whose completion produced a
-parseable answer (`status == "ok"`); no-answer and cap-hit rollouts are audited
-separately, not counted in the denominator. When the yield is zero, `R_T` is
+parseable answer (`status == "ok"`); rollouts with no extractable answer are
+excluded from the denominator. Cap-hits (generations that filled
+`max_new_tokens`) are flagged *independently* — a capped generation that still
+produced a parseable answer is counted. When the yield is zero, `R_T` is
 **undefined** (reported as `NaN`, with `rate_defined=False`), never zero.
 Estimated by `M` independent rollouts per depth and reported with a Wilson
 interval. `reachscan` estimates this conditional object — it is not a statement

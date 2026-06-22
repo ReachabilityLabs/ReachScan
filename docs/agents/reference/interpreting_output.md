@@ -20,7 +20,7 @@ Loaded on demand. Field-by-field meaning of a run's artifacts, plus the traps.
 | `dominant_mass` | its share of OK answers | rising dominant mass + falling R_T = basin takeover |
 | `answer_field_entropy` | bits over OK buckets (target-NEUTRAL) | dispersion; distinct from R_T (target-relative) |
 | `wilson_target_low/high` | 95% Wilson interval on R_T | **always quote this** — never report R_T as a point |
-| `field` | bucket -> count, serialized as a JSON object string | the full future field |
+| `field` | the full future field, as a JSON array of `[bucket, count]` pairs | the full future field |
 
 ## Reading it well
 - **Describe the trend, not a number.** Foreclosure = R_T falls as f grows while

@@ -81,7 +81,7 @@ def write_result(result, outdir: str | Path) -> Path:
             "answer_field_entropy": s.answer_field_entropy,
             "wilson_target_low": s.wilson_target_low,
             "wilson_target_high": s.wilson_target_high,
-            "field": json.dumps(s.field),
+            "field": json.dumps([[k, v] for k, v in s.field.items()], default=str),
         }
         for s in result.summaries
     ]

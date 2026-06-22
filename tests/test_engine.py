@@ -548,6 +548,37 @@ def test_hf_source_generation_config_mocked():
                 sys.modules[k] = v
 
 
+def test_field_serialization_handles_nonscalar_buckets():
+    """A projection with non-JSON-scalar buckets (e.g. tuples) must not crash
+    write_result — field serializes as [bucket, count] pairs with a str fallback."""
+    import csv
+    import json
+    import tempfile
+    from pathlib import Path
+    from reachscan.metadata import write_result
+
+    class TupleProj:
+        name = "tuple_bucket"
+        def extract(self, text):
+            return ExtractedAnswer(ExtractedAnswer.OK, "x", text)
+        def project(self, a):
+            return (1, 2)            # legal Hashable, not a JSON scalar
+        def is_target(self, a):
+            return True
+
+    src = MockSource()
+    ps = UserPrefixSource(src.encode_prompt("Q"), src.encode_prompt("a b c"))
+    res = reach_scan(source=src, prefix_source=ps, projection=TupleProj(),
+                     plan=[DepthSpec(1.0, 4)],
+                     rollout_sampler=SamplerPolicy(max_new_tokens=16))
+    out = Path(tempfile.mkdtemp()) / "run"
+    write_result(res, out)           # must not raise
+    with open(out / "summary_by_depth.csv", encoding="utf-8") as f:
+        rows = list(csv.DictReader(f))
+    parsed = json.loads(rows[-1]["field"])   # valid JSON array of pairs
+    assert isinstance(parsed, list) and parsed and parsed[0][1] >= 1
+
+
 # ----------------------------------------------------------------------------
 # Self-runner. KEEP THIS BLOCK AT THE END OF THE FILE: it collects only the
 # tests defined ABOVE it. In v0.2.0 it sat mid-file and `python
