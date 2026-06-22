@@ -105,6 +105,17 @@ projection. You never touch the engine.
 on tokens as such; other substrates could be measured by implementing the same
 shape. None is provided or claimed here.
 
+The shipped real-model source runs a **local open-weights model** (via
+HuggingFace): it needs token-level prefix continuation under a declared sampler,
+which closed/API-only chat models (e.g. hosted Claude/GPT endpoints) do not
+expose. So you cannot point the shipped tool at a closed API model out of the box;
+a future source adapter could wrap one, at the cost of weaker reproducibility
+guarantees.
+
+> **Using an AI coding agent on this repo?** See [`AGENTS.md`](AGENTS.md) and
+> [`docs/agents/`](docs/agents/) for an operator guide that keeps measurements
+> honest (no overclaiming, provenance preserved).
+
 ## The flagship example
 
 The floor-sum case (correct answer 532; `532 % 8 == 4`) is simply:

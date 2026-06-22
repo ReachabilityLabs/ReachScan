@@ -1,0 +1,38 @@
+---
+description: ReachScan operator discipline — measure target reachability/foreclosure of a committed reasoning prefix without overclaiming. Apply when working with reachscan code, projections, or run artifacts.
+globs:
+  - "src/reachscan/**"
+  - "tests/**"
+  - "examples/**"
+  - "docs/agents/**"
+  - "**/run_manifest.json"
+  - "**/summary_by_depth.csv"
+  - "**/receipts.csv"
+  - "**/MANIFEST.sha256"
+  - ".zenodo.json"
+alwaysApply: false
+---
+
+# ReachScan review (Cursor rule)
+
+Cursor loads `.cursor/rules/*.mdc`. This is a **thin adapter** over the canonical
+operator guide: [docs/agents/reachscan-operator.md](../../docs/agents/reachscan-operator.md).
+(Cursor also reads the root `AGENTS.md` as a baseline.)
+
+ReachScan is a black-box measurement instrument, not a model and not a claim.
+
+## Honesty contract (never violate)
+1. A mock run is **not** a result — `MockSource` is a fixture; name the source of any number.
+2. A zero count is a finite-budget observation, not proof of zero probability.
+3. Every measurement is sampler-relative and projection-relative.
+4. Two tasks in one model is **not** generality.
+5. No claims about model internals — the field is over outputs only.
+
+## When operating
+- Enforce the projection bucket/target consistency rule before any scan.
+- Mock smoke run first; label mock numbers as fixture output, never findings.
+- Report the depth trend with Wilson intervals, not a single number.
+- Trace every reported number to `run_manifest.json`; verify `MANIFEST.sha256`.
+- Use the reproduction-note template; do not overclaim or imply generality.
+
+Full workflow, traps, and field-by-field readout: see the canonical guide above.

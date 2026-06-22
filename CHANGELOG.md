@@ -1,5 +1,22 @@
 # Changelog
 
+## Unreleased — docs / infrastructure only (no change to the installable package)
+
+- **Agent-onboarding layer added.** A dialect-neutral operator guide
+  (`docs/agents/reachscan-operator.md`) plus thin per-tool adapters: `AGENTS.md`
+  (shared baseline, read by Codex/Cursor and other AGENTS.md-aware tools),
+  `.claude/skills/reachscan-review/` (Claude Code), `.agents/skills/reachscan-review/`
+  (Codex), `.cursor/rules/reachscan-review.mdc` (Cursor). Shared templates and
+  reference live once under `docs/agents/`. The honesty contract (mock ≠ result,
+  finite-budget, sampler/projection-relative, no internal-state claims,
+  one-task ≠ generality) travels in every adapter. `mcp/README.md` is a
+  placeholder for a future callable-tool layer.
+- **README:** noted that the shipped real-model source is a local open-weights
+  (HuggingFace) model — closed/API chat models are not supported out of the box.
+- The installable `reachscan` package is byte-identical to v0.2.3; the version is
+  intentionally not bumped for a docs/infrastructure-only change. `MANIFEST.sha256`
+  regenerated to cover the added files.
+
 ## 0.2.3 — 2026-06-22 (coherence-review hardening; all changes backward-compatible)
 
 A second independent cross-review of the v0.2.2 package found small public-facing
