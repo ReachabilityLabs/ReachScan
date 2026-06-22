@@ -115,9 +115,13 @@ class ModuloProjection:
     """
 
     def __init__(self, k: int, target_residue: int | None = None):
+        k = int(k)
+        if k <= 0:
+            raise ValueError(f"ModuloProjection modulus must be > 0; got {k}")
         self.name = f"mod_{k}"
-        self.k = int(k)
-        self.target_residue = target_residue
+        self.k = k
+        # Normalize so an out-of-range residue (e.g. 12 for k=8) still matches.
+        self.target_residue = target_residue % k if target_residue is not None else None
 
     def extract(self, completion_text: str) -> ExtractedAnswer:
         return _extract_numeric(completion_text)
@@ -139,9 +143,12 @@ class TargetFiber:
     Y ≡ 4 (mod 8) for the correct answer 532."""
 
     def __init__(self, modulus: int, correct_answer: int):
+        modulus = int(modulus)
+        if modulus <= 0:
+            raise ValueError(f"TargetFiber modulus must be > 0; got {modulus}")
         self.name = f"target_fiber_mod_{modulus}"
-        self.k = int(modulus)
-        self._target_residue = int(correct_answer) % int(modulus)
+        self.k = modulus
+        self._target_residue = int(correct_answer) % modulus
 
     def extract(self, completion_text: str) -> ExtractedAnswer:
         return _extract_numeric(completion_text)

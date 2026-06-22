@@ -21,7 +21,7 @@ Do not add the 131 MiB evidence archive or the optional historical volumes to or
 - Supplementary Evidence Appendix: v1.0-RC8
 - Full Technical Report and Audit Record: v0.9.34
 - Reach-Scan Evidence and Reproducibility Archive: v1.0-RC2
-- `reachscan` software: v0.2.3
+- `reachscan` software: v0.2.4
 - Historical lineage volumes: v1.0-RC1, optional and unchanged
 
 ## First push
@@ -29,7 +29,7 @@ Do not add the 131 MiB evidence archive or the optional historical volumes to or
 ```bash
 git init
 git add .
-git commit -m "Initial public release of reachscan v0.2.3"
+git commit -m "Initial public release of reachscan v0.2.4"
 git branch -M main
 git remote add origin <YOUR_GITHUB_REPOSITORY_URL>
 git push -u origin main
@@ -38,8 +38,8 @@ git push -u origin main
 Then create a Git tag and GitHub release:
 
 ```bash
-git tag -a v0.2.3 -m "reachscan v0.2.3"
-git push origin v0.2.3
+git tag -a v0.2.4 -m "reachscan v0.2.4"
+git push origin v0.2.4
 ```
 
 Attach the paper PDFs only if desired. The canonical evidence archive should be deposited separately and cited by DOI.

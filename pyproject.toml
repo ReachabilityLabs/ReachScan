@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "reachscan"
-version = "0.2.3"
+version = "0.2.4"
 description = "Measure the future field of a committed reasoning prefix: target reachability, basin structure, and foreclosure under commitment."
 readme = "README.md"
 license = {text = "Apache-2.0"}
@@ -21,7 +21,7 @@ classifiers = [
 dependencies = []
 
 [project.optional-dependencies]
-hf = ["torch>=2.0", "transformers>=4.40"]
+hf = ["torch>=2.0", "transformers>=4.40", "accelerate>=0.26"]
 plot = ["matplotlib>=3.7"]
 test = ["pytest>=8"]
 

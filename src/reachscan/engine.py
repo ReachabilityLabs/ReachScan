@@ -80,7 +80,8 @@ class DepthSummary:
     truncated: int               # source-flagged truncations (needs a finish-reason-capable source)
     cap_hits: int                # engine-flagged: len(new tokens) >= max_new_tokens
     no_answer: int
-    target_reachability: float   # R_T(f): mass on target among OK answers
+    target_reachability: float   # R_T(f): mass on target among OK answers (NaN if ok_answers == 0)
+    rate_defined: bool           # False when ok_answers == 0 -> R_T/Wilson are undefined (NaN)
     target_count: int
     dominant_bucket: Hashable | None
     dominant_mass: float
@@ -126,7 +127,7 @@ def shannon_entropy_bits(counts: Sequence[int]) -> float:
 # --------------------------------------------------------------------------
 # The engine
 # --------------------------------------------------------------------------
-_ENGINE_SCHEMA_VERSION = "0.2.3"  # bumped: manifest plan rows gain resolved_committed_len
+_ENGINE_SCHEMA_VERSION = "0.2.4"  # rate_defined on summaries; field serialized to summary CSV
 
 
 def reach_scan(
@@ -280,7 +281,11 @@ def _summarize_depth(
         field_counter[bucket] += 1
         target_count += int(is_tgt)
     numeric = len(ok)
-    r_t = (target_count / numeric) if numeric > 0 else 0.0
+    rate_defined = numeric > 0
+    # Zero valid answers => the rate has no denominator. Report NaN (undefined),
+    # NOT 0.0 — otherwise total extractor failure masquerades as certain zero
+    # reachability, and source_separation would contrast undefined rows.
+    r_t = (target_count / numeric) if rate_defined else float("nan")
 
     if field_counter:
         dominant_bucket, dominant_n = max(field_counter.items(), key=lambda kv: kv[1])
@@ -289,7 +294,8 @@ def _summarize_depth(
         dominant_bucket, dominant_mass = None, 0.0
 
     entropy = shannon_entropy_bits(list(field_counter.values()))
-    lo, hi = wilson_interval(target_count, numeric)
+    lo, hi = (wilson_interval(target_count, numeric) if rate_defined
+              else (float("nan"), float("nan")))
 
     return DepthSummary(
         fraction=spec.fraction,
@@ -301,6 +307,7 @@ def _summarize_depth(
         cap_hits=cap_hits,
         no_answer=no_answer,
         target_reachability=r_t,
+        rate_defined=rate_defined,
         target_count=target_count,
         dominant_bucket=dominant_bucket,
         dominant_mass=dominant_mass,

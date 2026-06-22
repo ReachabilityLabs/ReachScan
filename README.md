@@ -17,7 +17,7 @@ This is the language-model sibling of the oracle-backed random 3-SAT
 The two share a measurement grammar (committed state → reachable future); the
 substrates and guarantees differ.
 
-> Status: v0.2.3. The engine and reference components are tested. The worked example
+> Status: v0.2.4. The engine and reference components are tested. The worked example
 > reproduces the *shape* of the flagship result on a mock or a small live model; it
 > is not a release of production data.
 
@@ -61,14 +61,19 @@ reports, per depth:
 
 Let `s_f` be the prompt followed by the committed prefix at depth fraction `f`,
 and let `T` be the task's target set (the correct answer, or its residue class).
-The **future field** is the distribution of extracted answers under the declared
-sampler, conditioned on `s_f`. **Target reachability** is its mass on the target:
+The **future field** is the distribution of *successfully extracted* answers under
+the declared sampler, conditioned on `s_f`. **Target reachability** is its mass on
+the target, conditioned on a valid extraction:
 
 ```
-R_T(f) = P( extract(Y) ∈ T | committed prefix s_f, declared sampler )
+R_T(f) = P( extract(Y) ∈ T | extract(Y) defined, committed prefix s_f, declared sampler )
 ```
 
-estimated by `M` independent rollouts per depth and reported with a Wilson
+The denominator is the **answer yield** — rollouts whose completion produced a
+parseable answer (`status == "ok"`); no-answer and cap-hit rollouts are audited
+separately, not counted in the denominator. When the yield is zero, `R_T` is
+**undefined** (reported as `NaN`, with `rate_defined=False`), never zero.
+Estimated by `M` independent rollouts per depth and reported with a Wilson
 interval. `reachscan` estimates this conditional object — it is not a statement
 about the model's internals.
 
@@ -249,4 +254,4 @@ requested per the NOTICE, not restricted beyond Apache-2.0.
 
 This software is one component of the *Existence Is Not Reachability* publication family. The concise paper states the central scientific result; the Full Technical Report contains the complete argument and audit record; the Evidence and Reproducibility Archive contains the canonical evidence and constructors. See `docs/PRODUCT_ARCHITECTURE.md` and `release_assets/release_manifest.json`.
 
-Archive v1.0-RC2 includes complete per-rollout R006 repaired-path evidence. The reusable software is v0.2.3: a backward-compatible hardening release on top of the v0.2.2 core (see `CHANGELOG.md`); every prior caller still works.
+Archive v1.0-RC2 includes complete per-rollout R006 repaired-path evidence. The reusable software is v0.2.4: a backward-compatible hardening line on the v0.2.x core (see `CHANGELOG.md`); every prior caller still works.

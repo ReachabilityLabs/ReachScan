@@ -1,7 +1,26 @@
 # Changelog
 
-## Unreleased — docs / infrastructure only (no change to the installable package)
+## 0.2.4 — 2026-06-22 (hardening release; addresses an independent code review)
 
+**Code / measurement integrity**
+- **Undefined reachability is no longer reported as zero.** When `ok_answers == 0`
+  (total extractor failure), `target_reachability` and its Wilson interval are now
+  `NaN` and a new `rate_defined=False` flag is set — previously R_T was `0.0` with
+  interval `[0,0]`, so a failed extraction looked like *certain* zero reachability.
+  `source_separation` now raises on undefined rows instead of contrasting them.
+- **`[hf]` extra now includes `accelerate`** (required by `device_map="auto"`); a
+  clean `pip install ".[hf]"` could previously fail to load a model.
+- **Projection constructors validate their domain:** `ModuloProjection` and
+  `TargetFiber` reject modulus ≤ 0 and normalize `target_residue` mod the modulus
+  (no more divide-by-zero or silently-unreachable targets).
+- **Summary CSV gains `rate_defined` and a JSON-serialized `field` column** (the
+  full future field — previously documented but not written). `engine_schema`
+  bumped to `0.2.4`. A mocked-`transformers` test now exercises the HuggingFace
+  adapter's generation-config construction without downloading weights.
+- README formal object now conditions `R_T` on a valid extraction and defines
+  answer yield explicitly.
+
+**Also in this release (docs / infrastructure since 0.2.3)**
 - **Honesty contract gains an evidence-hierarchy rule:** raw artifacts
   (`receipts.csv` / `summary_by_depth.csv` / `run_manifest.json`) are
   authoritative; generated prose (ledgers, READMEs, plot captions, notebook
@@ -25,9 +44,8 @@
   placeholder for a future callable-tool layer.
 - **README:** noted that the shipped real-model source is a local open-weights
   (HuggingFace) model — closed/API chat models are not supported out of the box.
-- The installable `reachscan` package is byte-identical to v0.2.3; the version is
-  intentionally not bumped for a docs/infrastructure-only change. `MANIFEST.sha256`
-  regenerated to cover the added files.
+- `MANIFEST.sha256` regenerated; shipped `examples/demo_run/` regenerated under
+  v0.2.4 (adds the `rate_defined`/`field` columns; R_T values unchanged).
 
 ## 0.2.3 — 2026-06-22 (coherence-review hardening; all changes backward-compatible)
 

@@ -401,6 +401,153 @@ def test_source_separation_requires_same_plan():
         pass
 
 
+# ---------------------------------------------------------------------------
+# v0.2.4 additions (code-review hardening)
+# ---------------------------------------------------------------------------
+
+class _EmptyProj:
+    """A projection that never extracts an answer (forces zero yield)."""
+    name = "empty"
+    def extract(self, text):
+        return ExtractedAnswer(ExtractedAnswer.NO_ANSWER, None, text)
+    def project(self, a):
+        raise AssertionError("project called on non-ok answer")
+    def is_target(self, a):
+        raise AssertionError("is_target called on non-ok answer")
+
+
+def test_undefined_rate_when_zero_yield():
+    """Zero valid answers => R_T undefined (NaN, rate_defined False), not 0.0."""
+    import math
+    src = MockSource()
+    ps = UserPrefixSource(src.encode_prompt("Q"), src.encode_prompt("a b c"))
+    res = reach_scan(source=src, prefix_source=ps, projection=_EmptyProj(),
+                     plan=[DepthSpec(0.0, 8)],
+                     rollout_sampler=SamplerPolicy(max_new_tokens=16))
+    s = res.summaries[0]
+    assert s.ok_answers == 0 and s.rate_defined is False
+    assert math.isnan(s.target_reachability)
+    assert math.isnan(s.wilson_target_low) and math.isnan(s.wilson_target_high)
+
+
+def test_source_separation_rejects_undefined_rows():
+    """A depth with zero valid answers must make source_separation fail loud,
+    not contrast an undefined (NaN) rate into an apparent foreclosure."""
+    from reachscan import source_separation
+    src = MockSource()
+    ps = UserPrefixSource(src.encode_prompt("Q"), src.encode_prompt("a b c"))
+    bad = reach_scan(source=src, prefix_source=ps, projection=_EmptyProj(),
+                     plan=uniform_plan([0.0, 1.0], 8),
+                     rollout_sampler=SamplerPolicy(max_new_tokens=16))
+    try:
+        source_separation(bad, bad)
+        assert False, "expected undefined-rate rows to raise"
+    except ValueError:
+        pass
+
+
+def test_projection_modulus_validation_and_normalization():
+    for bad in (0, -3):
+        try:
+            ModuloProjection(bad, target_residue=1)
+            assert False, "ModuloProjection should reject modulus <= 0"
+        except ValueError:
+            pass
+        try:
+            TargetFiber(bad, 532)
+            assert False, "TargetFiber should reject modulus <= 0"
+        except ValueError:
+            pass
+    # an out-of-range residue is normalized mod k (12 % 8 == 4)
+    proj = ModuloProjection(8, target_residue=12)
+    a = proj.extract("the answer is \\boxed{4}")
+    assert a.is_ok and proj.is_target(a)
+
+
+def test_hf_source_generation_config_mocked():
+    """Exercise the HuggingFace adapter's generation-config build with fake
+    torch/transformers (no weights, no heavy deps): the declared policy passes
+    through and a pad_token_id of 0 is preserved."""
+    import sys
+    import types
+    captured = {}
+    saved = {k: sys.modules.get(k) for k in ("torch", "transformers")}
+
+    torch = types.ModuleType("torch")
+
+    class _Arr(list):
+        def tolist(self):
+            return list(self)
+
+    class _Tensor(list):
+        @property
+        def device(self):
+            return "cpu"
+
+    torch.tensor = lambda data, device=None: _Tensor(data)
+    torch.ones_like = lambda x: x
+    torch.manual_seed = lambda s: captured.__setitem__("seed", s)
+
+    class _NoGrad:
+        def __enter__(self):
+            return self
+        def __exit__(self, *exc):
+            return False
+
+    torch.no_grad = lambda: _NoGrad()
+
+    tf = types.ModuleType("transformers")
+
+    class _GenCfg:
+        def __init__(self, **kw):
+            captured.update(kw)
+
+    class _Tok:
+        pad_token_id = 0
+        eos_token_id = 2
+        vocab_size = 32000
+        chat_template = None
+        @classmethod
+        def from_pretrained(cls, *a, **k):
+            return cls()
+        def decode(self, ids, skip_special_tokens=True):
+            return "x"
+
+    class _Model:
+        device = "cpu"
+        @classmethod
+        def from_pretrained(cls, *a, **k):
+            return cls()
+        def eval(self):
+            return self
+        def generate(self, inp, attention_mask=None, generation_config=None):
+            return [_Arr(list(inp[0]) + [10, 11, 12])]
+
+    tf.GenerationConfig = _GenCfg
+    tf.AutoTokenizer = _Tok
+    tf.AutoModelForCausalLM = _Model
+
+    try:
+        sys.modules["torch"] = torch
+        sys.modules["transformers"] = tf
+        from reachscan.hf_source import HuggingFaceSource
+        src = HuggingFaceSource("fake/model")
+        new_ids = src.sample_completion([1, 2, 3], temperature=0.6, top_p=0.9,
+                                        max_new_tokens=8, top_k=10,
+                                        repetition_penalty=1.1, seed=42)
+        assert new_ids == [10, 11, 12]
+        assert captured["pad_token_id"] == 0          # valid pad id 0 preserved
+        assert captured["top_k"] == 10
+        assert captured["temperature"] == 0.6
+        assert captured["do_sample"] is True
+    finally:
+        for k, v in saved.items():
+            if v is None:
+                sys.modules.pop(k, None)
+            else:
+                sys.modules[k] = v
+
+
 # ----------------------------------------------------------------------------
 # Self-runner. KEEP THIS BLOCK AT THE END OF THE FILE: it collects only the
 # tests defined ABOVE it. In v0.2.0 it sat mid-file and `python

@@ -66,6 +66,12 @@ def source_separation(correct: ReachScanResult, wrong: ReachScanResult) -> Separ
 
     rows: list[SeparationRow] = []
     for ca, wb in zip(correct.summaries, wrong.summaries):
+        if not (ca.rate_defined and wb.rate_defined):
+            raise ValueError(
+                f"undefined target reachability at depth {ca.fraction} "
+                "(zero valid answers / extractor failure); fix yield before "
+                "contrasting — a zero denominator is not zero reachability"
+            )
         p1, p2 = ca.target_reachability, wb.target_reachability
         d = p1 - p2
         lo = d - math.sqrt((p1 - ca.wilson_target_low) ** 2 + (wb.wilson_target_high - p2) ** 2)

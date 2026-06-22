@@ -13,13 +13,14 @@ Loaded on demand. Field-by-field meaning of a run's artifacts, plus the traps.
 | `truncated` | source-flagged truncations | needs a finish-reason-capable source; often 0 |
 | `cap_hits` | generations that filled `max_new_tokens` | **watch this** — high cap_hits means answers were cut off; the budget audit |
 | `no_answer` | count with status == "no_answer" | extractor found nothing |
-| `target_reachability` | R_T(f): target mass among OK answers | the headline, but report it WITH the interval and the trend |
+| `target_reachability` | R_T(f): target mass among OK answers (`NaN` if `ok_answers == 0`) | the headline, but report it WITH the interval and the trend |
+| `rate_defined` | 0 when `ok_answers == 0` (R_T/Wilson are `NaN`) | **if 0, no valid answers at that depth — undefined, NOT zero reachability** |
 | `target_count` | OK answers in the target set | numerator of R_T |
 | `dominant_bucket` | the most massive bucket | where the field concentrates |
 | `dominant_mass` | its share of OK answers | rising dominant mass + falling R_T = basin takeover |
 | `answer_field_entropy` | bits over OK buckets (target-NEUTRAL) | dispersion; distinct from R_T (target-relative) |
 | `wilson_target_low/high` | 95% Wilson interval on R_T | **always quote this** — never report R_T as a point |
-| `field` | bucket -> count (in CSV: a dict string) | the full future field |
+| `field` | bucket -> count, serialized as a JSON object string | the full future field |
 
 ## Reading it well
 - **Describe the trend, not a number.** Foreclosure = R_T falls as f grows while

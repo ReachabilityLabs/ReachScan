@@ -6,5 +6,5 @@ authors:
   - family-names: Nothem
     given-names: Michael Richard
 license: Apache-2.0
-version: 0.2.3
+version: 0.2.4
 url: "https://github.com/ReachabilityLabs/ReachScan"
