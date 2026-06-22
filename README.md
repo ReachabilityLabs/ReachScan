@@ -105,12 +105,17 @@ projection. You never touch the engine.
 on tokens as such; other substrates could be measured by implementing the same
 shape. None is provided or claimed here.
 
-The shipped real-model source runs a **local open-weights model** (via
-HuggingFace): it needs token-level prefix continuation under a declared sampler,
-which closed/API-only chat models (e.g. hosted Claude/GPT endpoints) do not
-expose. So you cannot point the shipped tool at a closed API model out of the box;
-a future source adapter could wrap one, at the cost of weaker reproducibility
-guarantees.
+The shipped real-model source measures an **autoregressive, token-emitting model
+you have token-level access to** — a local open-weights model (the typical
+HuggingFace path), your own model, or a frontier model *if you hold its weights*.
+The line is **token-level access, not public-vs-closed**: it needs to freeze a
+committed prefix on token IDs and sample fresh continuations under a declared
+sampler, which a hosted chat **API** (Claude/GPT endpoints) does not expose — so
+the shipped tool can't run on an API model out of the box. The abstract contract
+is substrate-general — other substrates (non-autoregressive / diffusion, agents)
+could implement the same "committed state → reachable futures" shape — but those
+are **research extensions, not provided or claimed here**; a closed-API adapter
+would likewise be possible, with weaker reproducibility guarantees.
 
 > **Using an AI coding agent on this repo?** See [`AGENTS.md`](AGENTS.md) and
 > [`docs/agents/`](docs/agents/) for an operator guide that keeps measurements

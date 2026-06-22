@@ -47,13 +47,16 @@ auditing all run GPU-free; only a *real measurement* needs a model. If only the
 mock is available, you may demonstrate the *pipeline*, but label every number as
 fixture output, not a measurement.
 
-**Substrate (important):** the shipped real-model path runs a **local
-open-weights model** (via HuggingFace). The source contract needs token-level
-access — freeze a committed prefix on token IDs and sample continuations under a
-declared sampler — which closed/API-only chat models (e.g. hosted Claude/GPT
-endpoints) do not expose. So you **cannot** point the shipped tool at a closed
-API model out of the box; a future source adapter could wrap one, at the cost of
-weaker reproducibility guarantees.
+**Substrate (important):** the shipped real-model path measures an
+**autoregressive, token-emitting model you have token-level access to** — a local
+open-weights model (typical HuggingFace path), your own model, or a frontier model
+*if you hold its weights*. The line is **token-level access, not the
+public/closed distinction**: it needs to freeze a committed prefix on token IDs
+and sample continuations under a declared sampler, which a hosted chat **API**
+does not expose — so the shipped tool can't run on an API model out of the box.
+The contract is substrate-general (non-autoregressive/diffusion or agent
+substrates could implement the same shape), but those are **research extensions,
+not shipped**.
 
 ### 2. Define the task → design or validate a Projection
 A `Projection` is the task-specific plug: `extract(text) -> ExtractedAnswer`,
