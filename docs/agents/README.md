@@ -1,9 +1,9 @@
 # ReachScan agent-instruction infrastructure
 
-This is the **agent-onboarding layer** for ReachScan — the thing that lets a
-researcher open the repo in Claude Code, Codex, or Cursor and have the agent
-immediately understand: *this is a measurement instrument; run it carefully;
-don't overclaim; preserve provenance.*
+This is the **agent-onboarding layer** for ReachScan. It lets a researcher open
+the repo in Claude Code, Codex, or Cursor and have the agent immediately
+understand: *this is a measurement instrument; run it carefully; don't overclaim;
+preserve provenance.*
 
 It is a **draft for review**, staged outside the repo. The paths below are the
 real target locations: merge the bundle's contents into the repo so that
