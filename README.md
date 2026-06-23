@@ -4,7 +4,7 @@
 
 ![tests](https://github.com/ReachabilityLabs/ReachScan/actions/workflows/ci.yml/badge.svg)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
-<!-- after the first GitHub release, add: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.XXXXXXX.svg)](https://doi.org/10.5281/zenodo.XXXXXXX) -->
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20808922.svg)](https://doi.org/10.5281/zenodo.20808922)
 
 Endpoint accuracy collapses a model's behavior into one label. `reachscan` measures
 something richer: given a *committed* reasoning prefix, what is the distribution of

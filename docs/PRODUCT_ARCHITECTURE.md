@@ -18,5 +18,5 @@ Replace these after public deposit:
 - arXiv: `PENDING`
 - Technical Report DOI: `PENDING`
 - Evidence Archive DOI: `PENDING`
-- Software DOI: `PENDING`
+- Software DOI: `10.5281/zenodo.20808923` (v0.2.4) · concept DOI (all versions) `10.5281/zenodo.20808922`
 - OSF program URL: `PENDING`

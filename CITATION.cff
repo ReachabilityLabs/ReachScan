@@ -5,6 +5,8 @@ type: software
 authors:
   - family-names: Nothem
     given-names: Michael Richard
+    orcid: "https://orcid.org/0009-0006-3649-4438"
 license: Apache-2.0
 version: 0.2.4
+doi: 10.5281/zenodo.20808922
 url: "https://github.com/ReachabilityLabs/ReachScan"

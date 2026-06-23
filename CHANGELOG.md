@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+- **Zenodo DOI minted and wired in.** The v0.2.4 software deposit
+  (https://zenodo.org/records/20808923) is now referenced in-repo: the README DOI
+  badge and `CITATION.cff` use the **concept** DOI `10.5281/zenodo.20808922`
+  (always resolves to the latest version); `docs/PRODUCT_ARCHITECTURE.md` records
+  the **version** DOI `10.5281/zenodo.20808923` (v0.2.4). Author ORCID
+  (`0009-0006-3649-4438`) added to `CITATION.cff` and `.zenodo.json`. The other
+  identifier placeholders (arXiv, Technical Report DOI, Evidence Archive DOI, OSF)
+  remain `PENDING` until those products are deposited. Docs/metadata only; the
+  installable package is unchanged.
+
 ## 0.2.4 — 2026-06-22 (hardening release; addresses an independent code review)
 
 **Code / measurement integrity**
