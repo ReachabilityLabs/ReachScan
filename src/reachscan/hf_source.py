@@ -11,6 +11,7 @@ It is the live path you run on a real model (e.g. Qwen2.5-Math-7B-Instruct).
 """
 from __future__ import annotations
 
+import numbers
 from typing import Sequence
 
 
@@ -88,6 +89,17 @@ class HuggingFaceSource:
         seed: int | None = None,
         **sampler_extras,
     ) -> list[int]:
+        # Adapter-boundary guard: the contract says input_ids is list[int]. Catch
+        # a source that returned non-ints (e.g. BatchEncoding keys instead of
+        # token ids) here, with a clear message, instead of letting torch.tensor
+        # raise the opaque "too many dimensions 'str'" deeper down.
+        if not all(isinstance(t, numbers.Integral) for t in input_ids):
+            bad = next((t for t in input_ids if not isinstance(t, numbers.Integral)), None)
+            raise TypeError(
+                f"input_ids must be integer token ids; got {type(bad).__name__} "
+                f"({bad!r}). A source's encode_prompt likely returned non-ints "
+                "(e.g. BatchEncoding keys instead of token ids)."
+            )
         torch = self._torch
         from transformers import GenerationConfig
 

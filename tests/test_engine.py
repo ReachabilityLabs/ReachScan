@@ -579,6 +579,71 @@ def test_field_serialization_handles_nonscalar_buckets():
     assert isinstance(parsed, list) and parsed and parsed[0][1] >= 1
 
 
+# v0.2.5 additions: adapter-boundary regression tests for encode_prompt. These
+# would have caught the BatchEncoding bug without a GPU; the live notebook smoke
+# test is a backstop, not the first line of defense.
+
+def test_hf_encode_prompt_returns_int_ids_chat_template():
+    """Regression: the chat-template path must return integer token ids, not the
+    KEYS of a BatchEncoding. The bug was list(apply_chat_template(tokenize=True))
+    on a dict-like return -> ['input_ids', 'attention_mask']. The fix applies the
+    template as text (tokenize=False) then tokenizes and indexes ['input_ids']."""
+    from reachscan.hf_source import HuggingFaceSource
+
+    class _BatchEncoding(dict):
+        """dict-like: list() yields keys; indexing ['input_ids'] yields ids."""
+
+    class _Tok:
+        chat_template = "{{ messages }}"
+        def apply_chat_template(self, messages, add_generation_prompt=True, tokenize=False):
+            assert tokenize is False          # must request TEXT, not tokens
+            assert add_generation_prompt is True
+            return "TEMPLATED:" + messages[-1]["content"]
+        def __call__(self, text, add_special_tokens=True):
+            assert add_special_tokens is False   # template already added them
+            assert text.startswith("TEMPLATED:")
+            return _BatchEncoding(input_ids=[101, 102, 103], attention_mask=[1, 1, 1])
+
+    src = HuggingFaceSource.__new__(HuggingFaceSource)   # bypass GPU __init__
+    src.chat_template = True
+    src._tok = _Tok()
+    ids = src.encode_prompt("hello")
+    assert ids == [101, 102, 103]
+    assert all(isinstance(t, int) for t in ids)          # not dict keys
+
+
+def test_hf_encode_prompt_no_template_path():
+    """No-template fallback tokenizes the raw prompt and DOES add special tokens."""
+    from reachscan.hf_source import HuggingFaceSource
+
+    class _Tok:
+        chat_template = None                  # no template available
+        def __call__(self, text, add_special_tokens=True):
+            assert add_special_tokens is True
+            assert text == "hello"
+            return {"input_ids": [5, 6, 7]}
+
+    src = HuggingFaceSource.__new__(HuggingFaceSource)
+    src.chat_template = True                   # requested, but tokenizer has none
+    src._tok = _Tok()
+    assert src.encode_prompt("hello") == [5, 6, 7]
+
+
+def test_hf_sample_completion_rejects_non_int_ids():
+    """The runtime guard catches non-int token ids (the BatchEncoding-keys
+    failure mode) before torch.tensor turns it into an opaque error."""
+    from reachscan.hf_source import HuggingFaceSource
+
+    src = HuggingFaceSource.__new__(HuggingFaceSource)
+    src._torch = None                          # never reached; guard fires first
+    try:
+        src.sample_completion(["input_ids", "attention_mask"], temperature=0.0,
+                              top_p=1.0, max_new_tokens=4)
+        assert False, "expected TypeError on non-int input_ids"
+    except TypeError as e:
+        assert "integer token ids" in str(e)
+
+
 # ----------------------------------------------------------------------------
 # Self-runner. KEEP THIS BLOCK AT THE END OF THE FILE: it collects only the
 # tests defined ABOVE it. In v0.2.0 it sat mid-file and `python

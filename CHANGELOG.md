@@ -18,6 +18,13 @@
   double-adding special tokens). Root cause confirmed empirically on an A100
   (returned a 71-element all-integer id list; first token `151644` = Qwen's
   `<|im_start|>`), not inferred from the traceback alone.
+- **Regression coverage so this class of bug fails in CI, not on a GPU.** Added
+  mocked-tokenizer tests for `encode_prompt` (chat-template path asserts integer
+  ids rather than `BatchEncoding` keys; no-template fallback path) and a runtime
+  type guard in `sample_completion`: non-integer `input_ids` now raise a clear
+  `TypeError` *before* `torch.tensor`, instead of the opaque "too many dimensions
+  'str'" deeper down. Test count 31 → 34; the notebook smoke run is now a backstop,
+  not the first detection point.
 
 **Versioning / docs**
 - `package_version` bumped 0.2.4 → 0.2.5 across `pyproject.toml`,
