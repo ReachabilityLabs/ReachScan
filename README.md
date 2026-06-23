@@ -17,7 +17,7 @@ This is the language-model sibling of the oracle-backed random 3-SAT
 The two share a measurement grammar (committed state → reachable future); the
 substrates and guarantees differ.
 
-> Status: v0.2.5. The engine and reference components are tested. The worked example
+> Status: v0.2.6. The engine and reference components are tested. The worked example
 > reproduces the *shape* of the flagship result on a mock or a small live model; it
 > is not a release of production data.
 
@@ -43,6 +43,12 @@ point it at a model:
 ```bash
 reachscan-demo --hf Qwen/Qwen2.5-Math-7B-Instruct --out qwen_run   # needs [hf] extra + GPU
 ```
+
+For longer Colab/GPU runs, use
+[`notebooks/reachscan_quickstart.ipynb`](notebooks/reachscan_quickstart.ipynb).
+The notebook prints resource diagnostics, caches the generated reference trace,
+and checkpoints each completed depth so a disconnected runtime can skip finished
+depths on rerun while preserving the original depth indices and seed rule.
 
 ## What it measures
 
@@ -256,4 +262,4 @@ requested per the NOTICE, not restricted beyond Apache-2.0.
 
 This software is one component of the *Existence Is Not Reachability* publication family. The concise paper states the central scientific result; the Full Technical Report contains the complete argument and audit record; the Evidence and Reproducibility Archive contains the canonical evidence and constructors. See `docs/PRODUCT_ARCHITECTURE.md` and `release_assets/release_manifest.json`.
 
-Archive v1.0-RC2 includes complete per-rollout R006 repaired-path evidence. The reusable software is v0.2.5: a backward-compatible hardening line on the v0.2.x core (see `CHANGELOG.md`); every prior caller still works.
+Archive v1.0-RC2 includes complete per-rollout R006 repaired-path evidence. The reusable software is v0.2.6: a backward-compatible hardening line on the v0.2.x core (see `CHANGELOG.md`); every prior caller still works.

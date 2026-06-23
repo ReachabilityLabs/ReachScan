@@ -12,8 +12,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict
 
-FRAMEWORK_NAME = "Reachability Labs reachscan v0.2.5"
-FRAMEWORK_TAG = "Nothem Reachability / reach-scan instrument v0.2.5"
+FRAMEWORK_NAME = "Reachability Labs reachscan v0.2.6"
+FRAMEWORK_TAG = "Nothem Reachability / reach-scan instrument v0.2.6"
 CITATION_TEXT = (
     "If you use this instrument or the reach-scan measurement framing, please cite "
     "M.R. Nothem (2026), Reachability Labs, and the associated paper."
@@ -109,3 +109,90 @@ def write_result(result, outdir: str | Path) -> Path:
     manifest = provenance({"run_manifest": result.manifest})
     (outdir / "run_manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     return outdir
+
+
+def _read_csv(path: Path) -> list[dict[str, str]]:
+    if not path.exists() or not path.read_text(encoding="utf-8").strip():
+        return []
+    with path.open(newline="", encoding="utf-8") as f:
+        return list(csv.DictReader(f))
+
+
+def _jsonish(value: str | None) -> Any:
+    if value is None or value == "":
+        return None
+    try:
+        return json.loads(value)
+    except json.JSONDecodeError:
+        return value
+
+
+def _hashable(value: Any) -> Any:
+    if isinstance(value, list):
+        return tuple(_hashable(v) for v in value)
+    if isinstance(value, dict):
+        return json.dumps(value, sort_keys=True)
+    return value
+
+
+def read_result(outdir: str | Path):
+    """Read artifacts written by write_result() back into a ReachScanResult.
+
+    This is intended for checkpoint/resume workflows in notebooks: completed
+    per-depth checkpoints can be reloaded and combined without rerunning those
+    depths. CSV typing is reconstructed for the engine's standard fields; custom
+    bucket objects that were serialized through JSON fallback may round-trip as
+    strings or tuples, which is sufficient for plotting and final artifact
+    assembly.
+    """
+    from .engine import DepthSummary, ReachScanResult, RolloutReceipt
+
+    outdir = Path(outdir)
+    result = ReachScanResult()
+
+    for row in _read_csv(outdir / "summary_by_depth.csv"):
+        field_pairs = _jsonish(row.get("field")) or []
+        field = {_hashable(k): int(v) for k, v in field_pairs}
+        result.summaries.append(
+            DepthSummary(
+                fraction=float(row["fraction"]),
+                committed_len=int(row["committed_len"]),
+                attempts=int(row["attempts"]),
+                ok_answers=int(row["ok_answers"]),
+                numeric=int(row["numeric"]),
+                truncated=int(row["truncated"]),
+                cap_hits=int(row["cap_hits"]),
+                no_answer=int(row["no_answer"]),
+                target_reachability=float(row["target_reachability"]),
+                rate_defined=bool(int(row["rate_defined"])),
+                target_count=int(row["target_count"]),
+                dominant_bucket=_jsonish(row.get("dominant_bucket")),
+                dominant_mass=float(row["dominant_mass"]),
+                answer_field_entropy=float(row["answer_field_entropy"]),
+                wilson_target_low=float(row["wilson_target_low"]),
+                wilson_target_high=float(row["wilson_target_high"]),
+                field=field,
+            )
+        )
+
+    for row in _read_csv(outdir / "receipts.csv"):
+        result.receipts.append(
+            RolloutReceipt(
+                depth_index=int(row["depth_index"]),
+                fraction=float(row["fraction"]),
+                committed_len=int(row["committed_len"]),
+                rollout_index=int(row["rollout_index"]),
+                seed=int(row["seed"]),
+                status=row["status"],
+                value=(row["value"] if row["value"] != "" else None),
+                bucket=_jsonish(row.get("bucket")),
+                is_target=bool(int(row["is_target"])),
+                hit_token_cap=bool(int(row["hit_token_cap"])),
+            )
+        )
+
+    manifest_path = outdir / "run_manifest.json"
+    if manifest_path.exists():
+        doc = json.loads(manifest_path.read_text(encoding="utf-8"))
+        result.manifest = doc.get("run_manifest", doc)
+    return result

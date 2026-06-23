@@ -1,12 +1,12 @@
 {
-  "_framework": "Reachability Labs reachscan v0.2.5",
-  "_framework_tag": "Nothem Reachability / reach-scan instrument v0.2.5",
+  "_framework": "Reachability Labs reachscan v0.2.6",
+  "_framework_tag": "Nothem Reachability / reach-scan instrument v0.2.6",
   "_citation": "If you use this instrument or the reach-scan measurement framing, please cite M.R. Nothem (2026), Reachability Labs, and the associated paper.",
   "_usage_notice": "Apache-2.0. Provided as a reusable measurement instrument. The shipped sources/projections are clean reference implementations, not a production extraction pipeline. For inquiries contact mnothem@reachabilitylabs.org.",
-  "_generated_utc": "2026-06-23T21:32:09.408699+00:00",
+  "_generated_utc": "2026-06-23T22:24:41.879759+00:00",
   "run_manifest": {
     "engine_schema": "0.2.4",
-    "package_version": "0.2.5",
+    "package_version": "0.2.6",
     "source": "mock_source_v2",
     "sampler_semantics": null,
     "prefix_source": "generated_trace",

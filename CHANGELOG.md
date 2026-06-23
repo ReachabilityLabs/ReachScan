@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.2.6 — 2026-06-23 (checkpointed Colab runs; diagnostics; no schema bump)
+
+**Run control / Colab survivability**
+- `reach_scan` now supports `run_depth_indices`, a seed-preserving way to run a
+  subset of the effective depth plan. This is for checkpoint/resume workflows:
+  a resumed depth keeps its original `depth_index`, so the binding seed rule
+  (`sha256(base_seed|depth_index|rollout_index)`) remains unchanged. Default
+  behavior still runs every depth.
+- `reach_scan` now accepts `on_depth_complete`, an optional callback invoked
+  after each completed depth with the current partial result. The notebook uses
+  this to write artifacts as progress is made instead of waiting for the entire
+  scan to finish.
+- `metadata.read_result(outdir)` reads artifacts written by `write_result()` back
+  into a `ReachScanResult`, allowing completed per-depth checkpoints to be loaded
+  and stitched into the final output without rerunning those depths.
+- The quickstart notebook now has a resource/plan diagnostics cell and a
+  checkpointed Section 5. It caches the generated reference trace, writes one
+  checkpoint directory per completed depth, skips completed depths on rerun, and
+  assembles final `summary_by_depth.csv`, `receipts.csv`, and `run_manifest.json`
+  from the checkpoint set.
+
+**Versioning**
+- Package/provenance version bumped 0.2.5 → 0.2.6. `engine_schema` remains
+  `0.2.4` because the ordinary CSV/manifest output schema is unchanged.
+- Batched generation remains deferred: batching can improve GPU utilization, but
+  it changes generation/seed semantics and needs a deliberate v0.3 contract, not
+  a silent notebook patch.
+
 ## 0.2.5 — 2026-06-23 (real-model adapter fix; verified on GPU)
 
 **Reference adapter (the bug that blocked live runs)**

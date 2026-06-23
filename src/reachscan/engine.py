@@ -13,7 +13,7 @@ import math
 from collections import Counter
 from dataclasses import dataclass, field
 from hashlib import sha256
-from typing import Hashable, Sequence
+from typing import Callable, Hashable, Sequence
 
 from .contracts import (
     ExtractedAnswer,
@@ -140,6 +140,8 @@ def reach_scan(
     base_seed: int = 0,
     stop_token_ids: Sequence[int] | None = None,
     include_prompt_only: bool = True,
+    run_depth_indices: Sequence[int] | None = None,
+    on_depth_complete: Callable[[ReachScanResult], None] | None = None,
 ) -> ReachScanResult:
     """Run a reach-scan. Every input is an explicit parameter or a named
     contract — there are no hidden inputs, and every input lands in the manifest.
@@ -148,7 +150,14 @@ def reach_scan(
     engine PREPENDS the prompt-only row (the paper's load-bearing f=0 field).
     depth_index in receipts indexes this EFFECTIVE plan — the user plan plus the
     prepended row when injected — and the effective plan is what the manifest
-    records, so the numbering is never ambiguous."""
+    records, so the numbering is never ambiguous.
+
+    run_depth_indices: optional subset of effective-plan depth indices to
+    execute, preserving the original depth_index values and seed rule. This is
+    for checkpoint/resume workflows; default behavior runs every depth.
+
+    on_depth_complete: optional callback invoked after each completed depth with
+    the current partial ReachScanResult. The callback must not mutate the result."""
     prompt = list(prefix_source.prompt_ids())
     trace = list(prefix_source.reference_trace_ids())
     L = len(trace)
@@ -172,8 +181,49 @@ def reach_scan(
     if not full_plan:
         raise ValueError("empty plan: provide at least one DepthSpec or include_prompt_only=True")
 
+    selected_depths: set[int] | None = None
+    if run_depth_indices is not None:
+        selected_depths = {int(i) for i in run_depth_indices}
+        invalid = sorted(i for i in selected_depths if i < 0 or i >= len(full_plan))
+        if invalid:
+            raise ValueError(
+                f"run_depth_indices out of range for effective plan length "
+                f"{len(full_plan)}: {invalid}"
+            )
+        if not selected_depths:
+            raise ValueError("run_depth_indices must not be empty when provided")
+
+    from . import __version__ as _pkg_version  # local import: avoid import-order fragility
+    manifest = {
+        "engine_schema": _ENGINE_SCHEMA_VERSION,
+        "package_version": _pkg_version,
+        "source": getattr(source, "name", "unknown"),
+        "sampler_semantics": getattr(source, "sampler_semantics", None),
+        "prefix_source": getattr(prefix_source, "name", "unknown"),
+        "prefix_source_provenance": getattr(prefix_source, "provenance", None),
+        "projection": getattr(projection, "name", "unknown"),
+        "trace_len": L,
+        "base_seed": base_seed,
+        "rollout_sampler": vars(rollout_sampler),
+        "stop_token_ids": list(stop_token_ids) if stop_token_ids else None,
+        "include_prompt_only": include_prompt_only,
+        "plan": [{"fraction": d.fraction, "rollouts": d.rollouts,
+                  "committed_len": d.committed_len,
+                  "resolved_committed_len": (
+                      d.committed_len if d.committed_len is not None
+                      else round(d.fraction * L))}
+                 for d in full_plan],
+        "seed_rule": "sha256(base_seed|depth_index|rollout_index)[:8]; seeds in [0, 2**64)",
+    }
+    if selected_depths is not None:
+        manifest["executed_depth_indices"] = sorted(selected_depths)
+
     result = ReachScanResult()
+    result.manifest = dict(manifest)
     for depth_index, spec in enumerate(full_plan):
+        if selected_depths is not None and depth_index not in selected_depths:
+            continue
+
         committed_len = (spec.committed_len if spec.committed_len is not None
                          else round(spec.fraction * L))
         committed = prompt + trace[:committed_len]
@@ -219,29 +269,10 @@ def reach_scan(
             _summarize_depth(spec, committed_len, answers, projection,
                              cap_hits=sum(cap_flags))
         )
+        if on_depth_complete is not None:
+            on_depth_complete(result)
 
-    from . import __version__ as _pkg_version  # local import: avoid import-order fragility
-    result.manifest = {
-        "engine_schema": _ENGINE_SCHEMA_VERSION,
-        "package_version": _pkg_version,
-        "source": getattr(source, "name", "unknown"),
-        "sampler_semantics": getattr(source, "sampler_semantics", None),
-        "prefix_source": getattr(prefix_source, "name", "unknown"),
-        "prefix_source_provenance": getattr(prefix_source, "provenance", None),
-        "projection": getattr(projection, "name", "unknown"),
-        "trace_len": L,
-        "base_seed": base_seed,
-        "rollout_sampler": vars(rollout_sampler),
-        "stop_token_ids": list(stop_token_ids) if stop_token_ids else None,
-        "include_prompt_only": include_prompt_only,
-        "plan": [{"fraction": d.fraction, "rollouts": d.rollouts,
-                  "committed_len": d.committed_len,
-                  "resolved_committed_len": (
-                      d.committed_len if d.committed_len is not None
-                      else round(d.fraction * L))}
-                 for d in full_plan],
-        "seed_rule": "sha256(base_seed|depth_index|rollout_index)[:8]; seeds in [0, 2**64)",
-    }
+    result.manifest = dict(manifest)
     return result
 
 

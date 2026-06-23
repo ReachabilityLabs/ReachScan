@@ -644,6 +644,64 @@ def test_hf_sample_completion_rejects_non_int_ids():
         assert "integer token ids" in str(e)
 
 
+# v0.2.6 additions: checkpoint/resume support. The key invariant is that a
+# resumed depth must keep its original effective-plan depth_index, because the
+# seed rule is defined over (base_seed, depth_index, rollout_index).
+
+def test_run_depth_indices_preserves_seed_semantics():
+    src = MockSource()
+    ps = UserPrefixSource(src.encode_prompt("Q"), src.encode_prompt("a b c d"))
+    proj = ModuloProjection(8, 4)
+    plan = [DepthSpec(0.0, 3), DepthSpec(0.5, 3), DepthSpec(1.0, 3)]
+
+    full = reach_scan(source=src, prefix_source=ps, projection=proj, plan=plan,
+                      rollout_sampler=SamplerPolicy(max_new_tokens=16), base_seed=99)
+    resumed = reach_scan(source=src, prefix_source=ps, projection=proj, plan=plan,
+                         rollout_sampler=SamplerPolicy(max_new_tokens=16), base_seed=99,
+                         run_depth_indices=[2])
+
+    full_deep = [r.seed for r in full.receipts if r.depth_index == 2]
+    resumed_deep = [r.seed for r in resumed.receipts]
+    assert resumed.manifest["executed_depth_indices"] == [2]
+    assert {r.depth_index for r in resumed.receipts} == {2}
+    assert resumed_deep == full_deep
+
+
+def test_on_depth_complete_callback_is_incremental():
+    src = MockSource()
+    ps = UserPrefixSource(src.encode_prompt("Q"), src.encode_prompt("a b c d"))
+    calls = []
+
+    def on_depth(result):
+        calls.append((len(result.summaries), len(result.receipts)))
+
+    reach_scan(source=src, prefix_source=ps, projection=ModuloProjection(8, 4),
+               plan=[DepthSpec(0.0, 2), DepthSpec(1.0, 3)],
+               rollout_sampler=SamplerPolicy(max_new_tokens=16),
+               on_depth_complete=on_depth)
+    assert calls == [(1, 2), (2, 5)]
+
+
+def test_write_and_read_result_roundtrip_for_checkpoint():
+    import tempfile
+    from reachscan.metadata import read_result, write_result
+
+    src = MockSource()
+    ps = UserPrefixSource(src.encode_prompt("Q"), src.encode_prompt("a b c d"))
+    res = reach_scan(source=src, prefix_source=ps, projection=ModuloProjection(8, 4),
+                     plan=[DepthSpec(1.0, 4)],
+                     rollout_sampler=SamplerPolicy(max_new_tokens=16),
+                     run_depth_indices=[0])
+    out = Path(tempfile.mkdtemp()) / "checkpoint"
+    write_result(res, out)
+    loaded = read_result(out)
+    assert loaded.manifest["executed_depth_indices"] == [0]
+    assert len(loaded.summaries) == 1
+    assert len(loaded.receipts) == 4
+    assert loaded.summaries[0].attempts == res.summaries[0].attempts
+    assert loaded.receipts[0].seed == res.receipts[0].seed
+
+
 # ----------------------------------------------------------------------------
 # Self-runner. KEEP THIS BLOCK AT THE END OF THE FILE: it collects only the
 # tests defined ABOVE it. In v0.2.0 it sat mid-file and `python
