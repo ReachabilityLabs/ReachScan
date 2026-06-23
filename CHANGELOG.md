@@ -1,16 +1,42 @@
 # Changelog
 
-## Unreleased
+## 0.2.5 — 2026-06-23 (real-model adapter fix; verified on GPU)
 
-- **Zenodo DOI minted and wired in.** The v0.2.4 software deposit
-  (https://zenodo.org/records/20808923) is now referenced in-repo: the README DOI
-  badge and `CITATION.cff` use the **concept** DOI `10.5281/zenodo.20808922`
-  (always resolves to the latest version); `docs/PRODUCT_ARCHITECTURE.md` records
-  the **version** DOI `10.5281/zenodo.20808923` (v0.2.4). Author ORCID
-  (`0009-0006-3649-4438`) added to `CITATION.cff` and `.zenodo.json`. The other
-  identifier placeholders (arXiv, Technical Report DOI, Evidence Archive DOI, OSF)
-  remain `PENDING` until those products are deposited. Docs/metadata only; the
-  installable package is unchanged.
+**Reference adapter (the bug that blocked live runs)**
+- **`HuggingFaceSource.encode_prompt` now returns integer token ids, not the
+  strings `['input_ids', 'attention_mask']`.** The previous body called
+  `apply_chat_template(..., tokenize=True)` and then `list(...)` on the result.
+  On current `transformers`, that call returns a dict-like `BatchEncoding`, so
+  `list()` yielded its *keys* (strings) instead of token ids; downstream,
+  `sample_completion` did `torch.tensor([list(input_ids)])` and raised
+  `ValueError: too many dimensions 'str'`. This blocked the *entire* real-model
+  path — every scan that uses `GeneratedPrefixSource` calls `encode_prompt` — not
+  just a sanity cell. The fix applies the chat template as **text**
+  (`tokenize=False`) and then tokenizes that text in a separate call, indexing
+  `["input_ids"]`, which is robust to both the `BatchEncoding` and plain-list
+  return shapes. The no-template fallback is preserved (and now correctly avoids
+  double-adding special tokens). Root cause confirmed empirically on an A100
+  (returned a 71-element all-integer id list; first token `151644` = Qwen's
+  `<|im_start|>`), not inferred from the traceback alone.
+
+**Versioning / docs**
+- `package_version` bumped 0.2.4 → 0.2.5 across `pyproject.toml`,
+  `reachscan.__init__`, `metadata.py` (framework stamp), `CITATION.cff`, the
+  README status line, and `docs/PRODUCT_ARCHITECTURE.md`. `engine_schema` stays
+  `0.2.4`: the manifest/CSV schema is unchanged — this release touches only the
+  live adapter and provenance stamp.
+- **Zenodo DOI wired in (carried over from the v0.2.4 tag, ships in this
+  release).** README badge and `CITATION.cff` use the **concept** DOI
+  `10.5281/zenodo.20808922` (always resolves to the latest version);
+  `docs/PRODUCT_ARCHITECTURE.md` records the per-version DOIs (v0.2.4 =
+  `10.5281/zenodo.20808923`; v0.2.5 PENDING until deposit). Author ORCID
+  (`0009-0006-3649-4438`) is in `CITATION.cff` and `.zenodo.json`.
+- **Notebook prose cleanup ships here.** The quickstart notebook's conversational
+  scaffolding ("be your own first user") was stripped on `main` after the v0.2.4
+  tag was cut; the frozen v0.2.4 deposit still carries the old prose. The v0.2.5
+  deposit self-corrects it rather than re-cutting v0.2.4.
+- `examples/demo_run/` regenerated under v0.2.5 (framework stamp only; R_T values
+  and schema unchanged). `MANIFEST.sha256` regenerated.
 
 ## 0.2.4 — 2026-06-22 (hardening release; addresses an independent code review)
 

@@ -43,16 +43,27 @@ class HuggingFaceSource:
         self.vocab_size = self._tok.vocab_size
 
     def encode_prompt(self, prompt: str, *, system: str | None = None) -> list[int]:
-        if self.chat_template and self._tok.chat_template:
+        # Apply the chat template as TEXT (tokenize=False), then tokenize the
+        # text in a separate call and index ["input_ids"]. Calling
+        # apply_chat_template with tokenize=True can return a dict-like
+        # BatchEncoding on current transformers; list()-ing that yields its KEYS
+        # ('input_ids', 'attention_mask') instead of integer token ids, which
+        # later breaks torch.tensor([...]) with "too many dimensions 'str'".
+        # Indexing ["input_ids"] is robust to both the BatchEncoding and the
+        # plain-list return shapes.
+        use_template = bool(self.chat_template and getattr(self._tok, "chat_template", None))
+        if use_template:
             messages = []
             if system:
                 messages.append({"role": "system", "content": system})
             messages.append({"role": "user", "content": prompt})
-            ids = self._tok.apply_chat_template(
-                messages, add_generation_prompt=True, tokenize=True
+            text = self._tok.apply_chat_template(
+                messages, add_generation_prompt=True, tokenize=False
             )
-            return list(ids)
-        return list(self._tok(prompt, add_special_tokens=True)["input_ids"])
+        else:
+            text = prompt
+        # The template already inserts special tokens; don't add them twice.
+        return list(self._tok(text, add_special_tokens=not use_template)["input_ids"])
 
     def decode(self, token_ids: Sequence[int]) -> str:
         return self._tok.decode(list(token_ids), skip_special_tokens=True)
