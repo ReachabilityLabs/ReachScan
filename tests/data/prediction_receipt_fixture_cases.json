@@ -1,0 +1,134 @@
+{
+  "declared_classes": [
+    "residue_0",
+    "residue_1",
+    "residue_2",
+    "residue_3",
+    "residue_4",
+    "residue_5",
+    "residue_6",
+    "residue_7",
+    "no_answer",
+    "invalid"
+  ],
+  "target_class": "residue_4",
+  "prediction": {
+    "description": "Fixture prediction for floor-sum mod-8 morphology.",
+    "loss_rule": "any_test_failed",
+    "applies_to": {
+      "source_arm": "wrong_source"
+    },
+    "tests": [
+      {
+        "id": "families_are_real",
+        "type": "family_structure",
+        "depth_band": [0.85, 1.0],
+        "expected_mode": "concentrated",
+        "max_entropy": 0.75,
+        "min_n": 30
+      },
+      {
+        "id": "is_capture",
+        "type": "morphology_mode",
+        "depth_band": [0.85, 1.0],
+        "predicted_mode": "capture",
+        "capture_max": 0.55,
+        "shatter_min": 0.85,
+        "min_n": 30
+      },
+      {
+        "id": "family_before_atom",
+        "type": "family_before_atom",
+        "family_collapsed_below": 0.20,
+        "atom_won_above": 0.55,
+        "min_n_per_depth": 30,
+        "require_initial_target_mass_above": 0.20
+      }
+    ]
+  },
+  "cases": [
+    {
+      "name": "structured_supported",
+      "expected_outcome": "supported",
+      "rows": [
+        {"depth_fraction": 0.0, "projection_class": "residue_4", "parsed_answer": 532, "target_hit": true, "parse_status": "ok", "source_arm": "wrong_source", "count": 20},
+        {"depth_fraction": 0.0, "projection_class": "residue_2", "parsed_answer_start": 900, "target_hit": false, "parse_status": "ok", "source_arm": "wrong_source", "count": 20},
+        {"depth_fraction": 0.9, "projection_class": "residue_2", "parsed_answer_start": 1000, "target_hit": false, "parse_status": "ok", "source_arm": "wrong_source", "count": 40}
+      ]
+    },
+    {
+      "name": "noise_failed",
+      "expected_outcome": "failed",
+      "rows": [
+        {"depth_fraction": 0.0, "projection_class": "residue_4", "parsed_answer": 532, "target_hit": true, "parse_status": "ok", "source_arm": "wrong_source", "count": 20},
+        {"depth_fraction": 0.0, "projection_class": "residue_2", "parsed_answer_start": 1200, "target_hit": false, "parse_status": "ok", "source_arm": "wrong_source", "count": 20},
+        {"depth_fraction": 0.9, "projection_class": "residue_0", "parsed_answer_start": 2000, "target_hit": false, "parse_status": "ok", "source_arm": "wrong_source", "count": 6},
+        {"depth_fraction": 0.9, "projection_class": "residue_1", "parsed_answer_start": 2100, "target_hit": false, "parse_status": "ok", "source_arm": "wrong_source", "count": 6},
+        {"depth_fraction": 0.9, "projection_class": "residue_2", "parsed_answer_start": 2200, "target_hit": false, "parse_status": "ok", "source_arm": "wrong_source", "count": 6},
+        {"depth_fraction": 0.9, "projection_class": "residue_3", "parsed_answer_start": 2300, "target_hit": false, "parse_status": "ok", "source_arm": "wrong_source", "count": 6},
+        {"depth_fraction": 0.9, "projection_class": "residue_5", "parsed_answer_start": 2400, "target_hit": false, "parse_status": "ok", "source_arm": "wrong_source", "count": 6},
+        {"depth_fraction": 0.9, "projection_class": "residue_6", "parsed_answer_start": 2500, "target_hit": false, "parse_status": "ok", "source_arm": "wrong_source", "count": 6},
+        {"depth_fraction": 0.9, "projection_class": "residue_7", "parsed_answer_start": 2600, "target_hit": false, "parse_status": "ok", "source_arm": "wrong_source", "count": 6}
+      ]
+    },
+    {
+      "name": "thin_inconclusive",
+      "expected_outcome": "inconclusive",
+      "rows": [
+        {"depth_fraction": 0.0, "projection_class": "residue_4", "parsed_answer": 532, "target_hit": true, "parse_status": "ok", "source_arm": "wrong_source", "count": 8},
+        {"depth_fraction": 0.9, "projection_class": "residue_2", "parsed_answer_start": 3000, "target_hit": false, "parse_status": "ok", "source_arm": "wrong_source", "count": 10}
+      ]
+    },
+    {
+      "name": "already_dead_target_inconclusive",
+      "expected_outcome": "inconclusive",
+      "rows": [
+        {"depth_fraction": 0.0, "projection_class": "residue_2", "parsed_answer_start": 4000, "target_hit": false, "parse_status": "ok", "source_arm": "wrong_source", "count": 40},
+        {"depth_fraction": 0.9, "projection_class": "residue_2", "parsed_answer_start": 5000, "target_hit": false, "parse_status": "ok", "source_arm": "wrong_source", "count": 40}
+      ]
+    },
+    {
+      "name": "source_arm_filter_supported",
+      "expected_outcome": "supported",
+      "rows": [
+        {"depth_fraction": 0.0, "projection_class": "residue_4", "parsed_answer": 532, "target_hit": true, "parse_status": "ok", "source_arm": "wrong_source", "count": 20},
+        {"depth_fraction": 0.0, "projection_class": "residue_2", "parsed_answer_start": 6000, "target_hit": false, "parse_status": "ok", "source_arm": "wrong_source", "count": 20},
+        {"depth_fraction": 0.9, "projection_class": "residue_2", "parsed_answer_start": 7000, "target_hit": false, "parse_status": "ok", "source_arm": "wrong_source", "count": 40},
+        {"depth_fraction": 0.9, "projection_class": "residue_0", "parsed_answer_start": 8000, "target_hit": false, "parse_status": "ok", "source_arm": "correct_source", "count": 10},
+        {"depth_fraction": 0.9, "projection_class": "residue_1", "parsed_answer_start": 8100, "target_hit": false, "parse_status": "ok", "source_arm": "correct_source", "count": 10},
+        {"depth_fraction": 0.9, "projection_class": "residue_3", "parsed_answer_start": 8200, "target_hit": false, "parse_status": "ok", "source_arm": "correct_source", "count": 10},
+        {"depth_fraction": 0.9, "projection_class": "residue_5", "parsed_answer_start": 8300, "target_hit": false, "parse_status": "ok", "source_arm": "correct_source", "count": 10}
+      ]
+    },
+    {
+      "name": "diffuse_family_structure_supported",
+      "expected_outcome": "supported",
+      "prediction": {
+        "description": "Fixture proving expected_mode=diffuse is live configuration.",
+        "loss_rule": "any_test_failed",
+        "applies_to": {
+          "source_arm": "wrong_source"
+        },
+        "tests": [
+          {
+            "id": "families_are_diffuse",
+            "type": "family_structure",
+            "depth_band": [0.85, 1.0],
+            "expected_mode": "diffuse",
+            "min_entropy": 0.85,
+            "min_n": 30
+          }
+        ]
+      },
+      "rows": [
+        {"depth_fraction": 0.9, "projection_class": "residue_0", "parsed_answer_start": 9000, "target_hit": false, "parse_status": "ok", "source_arm": "wrong_source", "count": 6},
+        {"depth_fraction": 0.9, "projection_class": "residue_1", "parsed_answer_start": 9100, "target_hit": false, "parse_status": "ok", "source_arm": "wrong_source", "count": 6},
+        {"depth_fraction": 0.9, "projection_class": "residue_2", "parsed_answer_start": 9200, "target_hit": false, "parse_status": "ok", "source_arm": "wrong_source", "count": 6},
+        {"depth_fraction": 0.9, "projection_class": "residue_3", "parsed_answer_start": 9300, "target_hit": false, "parse_status": "ok", "source_arm": "wrong_source", "count": 6},
+        {"depth_fraction": 0.9, "projection_class": "residue_5", "parsed_answer_start": 9400, "target_hit": false, "parse_status": "ok", "source_arm": "wrong_source", "count": 6},
+        {"depth_fraction": 0.9, "projection_class": "residue_6", "parsed_answer_start": 9500, "target_hit": false, "parse_status": "ok", "source_arm": "wrong_source", "count": 6},
+        {"depth_fraction": 0.9, "projection_class": "residue_7", "parsed_answer_start": 9600, "target_hit": false, "parse_status": "ok", "source_arm": "wrong_source", "count": 6}
+      ]
+    }
+  ]
+}

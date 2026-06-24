@@ -17,7 +17,7 @@ This is the language-model sibling of the oracle-backed random 3-SAT
 The two share a measurement grammar (committed state → reachable future); the
 substrates and guarantees differ.
 
-> Status: v0.3.0. The engine and reference components are tested. The worked example
+> Status: v0.3.1. The engine and reference components are tested. The worked example
 > reproduces the *shape* of the flagship result on a mock or a small live model; it
 > is not a release of production data.
 
@@ -169,8 +169,17 @@ and records `projection_class` + projection identity on every receipt. The engin
 stays generic — a plain projection produces no pack block, and `engine_schema`
 moved `0.2.8 → 0.3.0` only because receipts and the manifest grew.
 
-> The predeclared `prediction` block in a pack is carried and hashed but not yet
-> *evaluated* — the prediction verdict layer is the next phase.
+The pack's predeclared `prediction` block is evaluated from raw receipts into a
+`supported / failed / inconclusive` verdict:
+
+```bash
+reachscan prediction evaluate <run_dir> --projection examples/projections/floor_sum_mod8
+```
+
+The three tests read **wrong-answer morphology** (family structure, capture vs
+shatter, family-before-atom); thin/zero evidence is `inconclusive`, never a false
+support; and the evaluator refuses a run that used a different pack (it checks the
+`projection_pack_hash`). See [`docs/PREDICTION_CONTRACT.md`](docs/PREDICTION_CONTRACT.md).
 
 ## Repo layout
 

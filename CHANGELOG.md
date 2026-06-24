@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.3.1 — 2026-06-24 (prediction evaluator; handoff v2.1 Phase 4; no engine schema bump)
+
+Turns a pack's predeclared `prediction` block into a mechanical
+`supported / failed / inconclusive` verdict computed from **raw receipts** — a
+faithful port of the handoff's evaluator sketch. The morphology claim becomes
+losable instead of a post-hoc reading. Layer over the engine; `engine_schema`
+stays `0.3.0` (the evaluator reads existing receipts).
+
+- **`reachscan.prediction`** — `evaluate_prediction(rows, prediction, classes,
+  target_class)` with three test types over the WRONG-answer field:
+  `family_structure` (normalized entropy vs `expected_mode` concentrated/diffuse/
+  mixed), `morphology_mode` (capture/shatter/mixed), `family_before_atom`
+  (two-grain, with an initial target-viability precondition). `any_test_failed` is
+  the only accepted loss rule; unknown rules/test types → `inconclusive`. Thin
+  data, missing bands, and already-collapsed targets are `inconclusive`, never a
+  false support. Plus `evaluate_run(pack, result)`, `rows_from_result`,
+  `prediction_hash`, `write_prediction_verdict`, `update_manifest_with_verdict`.
+- **CLI** `reachscan prediction evaluate <run_dir> --projection <pack_dir>` —
+  writes `prediction_verdict.json` and records a `prediction` block in
+  `run_manifest.json`. Refuses a run whose `projection_pack_hash` differs from the
+  pack (projection lock); `applies_to.source_arm` filters to one declared arm.
+- **Tests** — the six packaged receipt fixtures (supported / failed / two
+  inconclusive / source-arm-filtered / diffuse-mode) all reproduce their declared
+  outcomes, plus the verification-plan unit checks. Tests 66 → 81.
+- **Docs** — `docs/PREDICTION_CONTRACT.md`; pack README + `projection.yaml` updated
+  (note: editing `projection.yaml` changes the behavior-bearing pack hash, as
+  intended). Demo + `MANIFEST.sha256` regenerated.
+
 ## 0.3.0 — 2026-06-24 (projection packs + receipt/manifest binding; engine_schema 0.2.8 → 0.3.0)
 
 Implements Phases 1–3 of the projection/prediction operationalization handoff

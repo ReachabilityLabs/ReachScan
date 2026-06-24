@@ -114,6 +114,8 @@ class ProjectionPack:
         self.target_class: str = proj["target_class"]
         self.declared_classes: tuple[str, ...] = tuple(proj.get("classes", ()))
         self.target: dict = spec.get("target", {})
+        # Predeclared prediction block (evaluated by reachscan.prediction, Phase 4).
+        self.prediction: dict = spec.get("prediction", {}) or {}
         # Engine Projection.name:
         self.name = self.projection_id
 

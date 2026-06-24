@@ -1,12 +1,12 @@
 {
-  "_framework": "Reachability Labs reachscan v0.3.0",
-  "_framework_tag": "Nothem Reachability / reach-scan instrument v0.3.0",
+  "_framework": "Reachability Labs reachscan v0.3.1",
+  "_framework_tag": "Nothem Reachability / reach-scan instrument v0.3.1",
   "_citation": "If you use this instrument or the reach-scan measurement framing, please cite M.R. Nothem (2026), Reachability Labs, and the associated paper.",
   "_usage_notice": "Apache-2.0. Provided as a reusable measurement instrument. The shipped sources/projections are clean reference implementations, not a production extraction pipeline. For inquiries contact mnothem@reachabilitylabs.org.",
-  "_generated_utc": "2026-06-24T06:48:52.852517+00:00",
+  "_generated_utc": "2026-06-24T07:09:21.674560+00:00",
   "run_manifest": {
     "engine_schema": "0.3.0",
-    "package_version": "0.3.0",
+    "package_version": "0.3.1",
     "source": "mock_source_v2",
     "sampler_semantics": null,
     "prefix_source": "generated_trace",
@@ -80,17 +80,17 @@
         }
       },
       "environment": {
-        "wall_clock_s_total": 0.015161,
+        "wall_clock_s_total": 0.018564,
         "wall_clock_s_by_depth": {
-          "0": 0.003489,
-          "1": 0.002894,
-          "2": 0.003019,
-          "3": 0.002957,
-          "4": 0.002802
+          "0": 0.003857,
+          "1": 0.003683,
+          "2": 0.003738,
+          "3": 0.00364,
+          "4": 0.003646
         },
         "runtime": null,
-        "started_utc": "2026-06-24T06:48:52.832000+00:00",
-        "ended_utc": "2026-06-24T06:48:52.848015+00:00"
+        "started_utc": "2026-06-24T07:09:21.648404+00:00",
+        "ended_utc": "2026-06-24T07:09:21.668277+00:00"
       }
     }
   }

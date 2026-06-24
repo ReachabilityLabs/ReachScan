@@ -43,8 +43,8 @@ projection:
     - no_answer
     - invalid
 
-# Predeclared prediction block (Phase 4 evaluator not yet implemented in code;
-# carried here so it is hashed with the pack and ready for `prediction evaluate`).
+# Predeclared prediction block. Hashed with the pack and evaluated from raw
+# receipts by `reachscan prediction evaluate` (reachscan.prediction).
 prediction:
   description: >
     Wrong answers organize by the declared residue families; the family-grain

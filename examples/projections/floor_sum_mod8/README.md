@@ -33,8 +33,16 @@ reachscan projection validate examples/projections/floor_sum_mod8
 This loads the pack, runs the fixtures through the adapter, and prints the
 `projection_pack_hash`. Fixtures must pass before a claim-bearing run.
 
+## Evaluate the predeclared prediction (v0.3.1)
+After a pack-driven run, compute the morphology verdict from raw receipts:
+```bash
+reachscan prediction evaluate <run_dir> --projection examples/projections/floor_sum_mod8
+```
+This writes `prediction_verdict.json` (`supported / failed / inconclusive`) and
+records the prediction block in `run_manifest.json`. The run must have used THIS
+pack (the evaluator checks the `projection_pack_hash`). `run_pack_demo.py` produces
+a suitable mock run.
+
 ## Status
-This pack is at claim level `morphology_demo`. The predeclared `prediction` block
-is carried and hashed, but the prediction **evaluator** (the v2.1 Phase 4 layer
-that turns it into a `supported / failed / inconclusive` verdict) is not yet
-implemented — that is the next phase.
+This pack is at claim level `morphology_demo`. Real answer-exposure auditing and
+claim levels above `morphology_demo` remain future work.
