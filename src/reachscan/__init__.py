@@ -1,5 +1,5 @@
 """reachscan — measure the future field of a committed reasoning prefix."""
-__version__ = "0.2.7"
+__version__ = "0.2.8"
 
 from .contracts import (
     ExtractedAnswer,
@@ -8,7 +8,15 @@ from .contracts import (
     SamplerPolicy,
     TokenContinuationSource,
 )
-from .engine import DepthSpec, ReachScanResult, reach_scan, uniform_plan, derive_seed
+from .engine import (
+    DepthSpec,
+    ReachScanResult,
+    estimate_cost,
+    reach_scan,
+    uniform_plan,
+    derive_seed,
+)
+from .metadata import read_result, stitch_results, write_result
 from .projections import ExactMatch, ModuloProjection, TargetFiber
 from .prefix_sources import GeneratedPrefixSource, UserPrefixSource
 from .mock_source import MockSource

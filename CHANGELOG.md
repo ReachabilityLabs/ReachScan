@@ -1,5 +1,45 @@
 # Changelog
 
+## 0.2.8 — 2026-06-24 (cost instrumentation; first schema bump since 0.2.4)
+
+**What a scan now reports about its own cost.** The engine measures; callers
+present. Cost is split into two tiers that are never conflated: **work**
+(generated tokens) is deterministic given seed+model and is reproducible;
+**environment** (wall-clock, hardware) is noisy provenance, not a measurement.
+
+- **Receipts gain `n_new_tokens`** — the generated-token count per rollout (the
+  engine already had `len(new_ids)` in hand for the cap-hit check and now keeps
+  it). Deterministic, so it is the reproducible measure of work done.
+- **The run manifest gains a `cost` block** with `work` (`gen_tokens_total`,
+  `gen_tokens_by_depth`) and `environment` (`wall_clock_s_total`/`_by_depth`,
+  `runtime`, `started_utc`, `ended_utc`). The block grows during the run, so a
+  partial result handed to `on_depth_complete` already carries cost-so-far.
+- **The engine stays substrate-agnostic** — it never imports torch. Hardware
+  identity comes *from the source*: `HuggingFaceSource.describe_runtime()` reports
+  device/GPU/dtype/library versions; the engine records whatever it returns (and a
+  source without the method, like the mock, contributes `runtime: null`). A source
+  that raises cannot abort a scan.
+- **`reachscan.estimate_cost(plan, …)`** — an a-priori cost helper. The rollout
+  *count* is exact; the *seconds* are an explicitly-labeled **upper bound**
+  (assumes every rollout fills `max_new_tokens` at the trace-generation token
+  rate, ignoring deeper-prefix prefill). Honest by construction: it is a ceiling
+  to refine live, not a confident point estimate.
+- **`reachscan.stitch_results(parts)`** — combines per-depth checkpoints into one
+  whole-run result and **sums the cost block across them**. Each checkpoint's
+  manifest only covers its own depth; naively keeping one would under-report total
+  tokens/wall-clock by the number of depths. Verified: stitched gen-token total
+  equals a single-pass run, and seeds remain identical.
+- **`on_progress` callback** on `reach_scan` — fires once per rollout with
+  `{depth_index, rollout_index, rollouts_in_depth, depths_total}` for an
+  intra-depth progress bar. Default `None` keeps the library silent.
+
+**Schema.** `engine_schema` bumped `0.2.4 → 0.2.8` — the first measurement-schema
+change since 0.2.4, because receipts gained a column and the manifest gained the
+cost block. **Backward-compatible:** `read_result` tolerates pre-0.2.8 artifacts
+that lack the `n_new_tokens` column (the count defaults to `0`); the floor-sum R_T
+values in the regenerated demo are unchanged. Tests 43 → 49. `MANIFEST.sha256`
+regenerated.
+
 ## 0.2.7 — 2026-06-23 (run-contract gate; no schema bump)
 
 **Run control / notebook safety**

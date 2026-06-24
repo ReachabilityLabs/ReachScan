@@ -1,12 +1,12 @@
 {
-  "_framework": "Reachability Labs reachscan v0.2.7",
-  "_framework_tag": "Nothem Reachability / reach-scan instrument v0.2.7",
+  "_framework": "Reachability Labs reachscan v0.2.8",
+  "_framework_tag": "Nothem Reachability / reach-scan instrument v0.2.8",
   "_citation": "If you use this instrument or the reach-scan measurement framing, please cite M.R. Nothem (2026), Reachability Labs, and the associated paper.",
   "_usage_notice": "Apache-2.0. Provided as a reusable measurement instrument. The shipped sources/projections are clean reference implementations, not a production extraction pipeline. For inquiries contact mnothem@reachabilitylabs.org.",
-  "_generated_utc": "2026-06-24T01:40:21.948951+00:00",
+  "_generated_utc": "2026-06-24T03:28:47.917905+00:00",
   "run_manifest": {
-    "engine_schema": "0.2.4",
-    "package_version": "0.2.7",
+    "engine_schema": "0.2.8",
+    "package_version": "0.2.8",
     "source": "mock_source_v2",
     "sampler_semantics": null,
     "prefix_source": "generated_trace",
@@ -66,6 +66,31 @@
         "resolved_committed_len": 150
       }
     ],
-    "seed_rule": "sha256(base_seed|depth_index|rollout_index)[:8]; seeds in [0, 2**64)"
+    "seed_rule": "sha256(base_seed|depth_index|rollout_index)[:8]; seeds in [0, 2**64)",
+    "cost": {
+      "work": {
+        "gen_tokens_total": 9044,
+        "gen_tokens_by_depth": {
+          "0": 1799,
+          "1": 1811,
+          "2": 1808,
+          "3": 1807,
+          "4": 1819
+        }
+      },
+      "environment": {
+        "wall_clock_s_total": 0.016251,
+        "wall_clock_s_by_depth": {
+          "0": 0.00368,
+          "1": 0.003068,
+          "2": 0.003065,
+          "3": 0.003323,
+          "4": 0.003115
+        },
+        "runtime": null,
+        "started_utc": "2026-06-24T03:28:47.897346+00:00",
+        "ended_utc": "2026-06-24T03:28:47.914650+00:00"
+      }
+    }
   }
 }

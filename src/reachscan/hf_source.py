@@ -69,6 +69,29 @@ class HuggingFaceSource:
     def decode(self, token_ids: Sequence[int]) -> str:
         return self._tok.decode(list(token_ids), skip_special_tokens=True)
 
+    def describe_runtime(self) -> dict:
+        """Hardware/version provenance for the engine's cost block. This is the
+        ONE place the adapter reports its backend; the engine stays torch-free
+        and just records whatever this returns (environmental, not a result)."""
+        torch = self._torch
+        info: dict = {
+            "model_id": self.model_id,
+            "revision": self.revision,
+            "device": str(getattr(self._model, "device", None)),
+            "torch_dtype": str(getattr(self._model, "dtype", None)),
+        }
+        try:
+            import transformers
+            info["torch_version"] = torch.__version__
+            info["transformers_version"] = transformers.__version__
+            if torch.cuda.is_available():
+                info["gpu_name"] = torch.cuda.get_device_name(0)
+                props = torch.cuda.get_device_properties(0)
+                info["gpu_memory_gb"] = round(props.total_memory / 1024**3, 2)
+        except Exception:  # provenance is best-effort; never break a run for it
+            pass
+        return info
+
     # Receipt-visible declaration of how this adapter builds its decode policy.
     sampler_semantics = (
         "explicit-generation-config: the decode policy is built from the declared "

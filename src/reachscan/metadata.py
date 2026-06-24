@@ -12,8 +12,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict
 
-FRAMEWORK_NAME = "Reachability Labs reachscan v0.2.7"
-FRAMEWORK_TAG = "Nothem Reachability / reach-scan instrument v0.2.7"
+FRAMEWORK_NAME = "Reachability Labs reachscan v0.2.8"
+FRAMEWORK_TAG = "Nothem Reachability / reach-scan instrument v0.2.8"
 CITATION_TEXT = (
     "If you use this instrument or the reach-scan measurement framing, please cite "
     "M.R. Nothem (2026), Reachability Labs, and the associated paper."
@@ -100,6 +100,7 @@ def write_result(result, outdir: str | Path) -> Path:
             "bucket": r.bucket,
             "is_target": int(r.is_target),
             "hit_token_cap": int(r.hit_token_cap),
+            "n_new_tokens": r.n_new_tokens,
         }
         for r in result.receipts
     ]
@@ -188,6 +189,9 @@ def read_result(outdir: str | Path):
                 bucket=_jsonish(row.get("bucket")),
                 is_target=bool(int(row["is_target"])),
                 hit_token_cap=bool(int(row["hit_token_cap"])),
+                # Backward-compat: pre-0.2.8 artifacts have no token column.
+                n_new_tokens=(int(row["n_new_tokens"])
+                              if row.get("n_new_tokens") not in (None, "") else 0),
             )
         )
 
@@ -196,3 +200,66 @@ def read_result(outdir: str | Path):
         doc = json.loads(manifest_path.read_text(encoding="utf-8"))
         result.manifest = doc.get("run_manifest", doc)
     return result
+
+
+def _part_min_depth(part) -> int:
+    return min((r.depth_index for r in part.receipts), default=0)
+
+
+def stitch_results(parts):
+    """Combine per-depth checkpoint results into one whole-run result.
+
+    Use this instead of hand-concatenating checkpoints: it orders parts by
+    depth_index and, crucially, SUMS the cost block across them. Each per-depth
+    checkpoint's manifest only covers its own depth, so naively keeping one
+    checkpoint's manifest would under-report total tokens and wall-clock by the
+    number of depths. Returns a ReachScanResult whose manifest drops
+    `executed_depth_indices`, sets `stitched_from_checkpoints=True`, and carries
+    the summed cost block (earliest start / latest end across parts).
+    """
+    from .engine import ReachScanResult
+
+    ordered = sorted((p for p in parts if p is not None), key=_part_min_depth)
+    merged = ReachScanResult()
+
+    gen_by_depth: dict[str, int] = {}
+    secs_by_depth: dict[str, float] = {}
+    runtime = None
+    starts: list[str] = []
+    ends: list[str] = []
+    base_manifest: dict | None = None
+
+    for p in ordered:
+        merged.summaries.extend(p.summaries)
+        merged.receipts.extend(p.receipts)
+        if base_manifest is None and p.manifest:
+            base_manifest = dict(p.manifest)
+        cost = (p.manifest or {}).get("cost") or {}
+        work = cost.get("work") or {}
+        env = cost.get("environment") or {}
+        gen_by_depth.update(work.get("gen_tokens_by_depth") or {})
+        secs_by_depth.update(env.get("wall_clock_s_by_depth") or {})
+        runtime = runtime or env.get("runtime")
+        if env.get("started_utc"):
+            starts.append(env["started_utc"])
+        if env.get("ended_utc"):
+            ends.append(env["ended_utc"])
+
+    if base_manifest is not None:
+        base_manifest.pop("executed_depth_indices", None)
+        base_manifest["stitched_from_checkpoints"] = True
+        base_manifest["cost"] = {
+            "work": {
+                "gen_tokens_total": sum(gen_by_depth.values()),
+                "gen_tokens_by_depth": gen_by_depth,
+            },
+            "environment": {
+                "wall_clock_s_total": round(sum(secs_by_depth.values()), 6),
+                "wall_clock_s_by_depth": secs_by_depth,
+                "runtime": runtime,
+                "started_utc": min(starts) if starts else None,
+                "ended_utc": max(ends) if ends else None,
+            },
+        }
+        merged.manifest = base_manifest
+    return merged

@@ -702,6 +702,119 @@ def test_write_and_read_result_roundtrip_for_checkpoint():
     assert loaded.receipts[0].seed == res.receipts[0].seed
 
 
+# v0.2.8 additions: cost instrumentation (token counts, cost block, estimate,
+# checkpoint-aware stitching). Tokens are deterministic; wall-clock is not, so
+# the tests assert on tokens/structure, never on a specific number of seconds.
+
+def test_receipts_record_generated_token_count():
+    """Every receipt carries n_new_tokens, and cap-hit receipts generated exactly
+    max_new_tokens (the mock honors max_new_tokens)."""
+    src = MockSource()
+    ps = UserPrefixSource(src.encode_prompt("Q"), src.encode_prompt("a b c d"))
+    res = reach_scan(source=src, prefix_source=ps, projection=ModuloProjection(8, 4),
+                     plan=[DepthSpec(0.0, 8), DepthSpec(1.0, 8)],
+                     rollout_sampler=SamplerPolicy(max_new_tokens=16))
+    assert all(isinstance(r.n_new_tokens, int) and r.n_new_tokens >= 0 for r in res.receipts)
+    for r in res.receipts:
+        if r.hit_token_cap:
+            assert r.n_new_tokens == 16
+
+
+def test_cost_block_present_and_sums_to_receipts():
+    """The manifest cost block separates work (tokens) from environment (seconds);
+    gen_tokens_total equals the sum of per-receipt token counts."""
+    src = MockSource()
+    ps = UserPrefixSource(src.encode_prompt("Q"), src.encode_prompt("a b c d"))
+    res = reach_scan(source=src, prefix_source=ps, projection=ModuloProjection(8, 4),
+                     plan=[DepthSpec(0.0, 6), DepthSpec(0.5, 6), DepthSpec(1.0, 6)],
+                     rollout_sampler=SamplerPolicy(max_new_tokens=16))
+    cost = res.manifest["cost"]
+    total = sum(r.n_new_tokens for r in res.receipts)
+    assert cost["work"]["gen_tokens_total"] == total
+    # per-depth token tallies also sum to the total
+    assert sum(cost["work"]["gen_tokens_by_depth"].values()) == total
+    # environment tier exists and is non-negative; runtime is None for the mock
+    assert cost["environment"]["wall_clock_s_total"] >= 0.0
+    assert cost["environment"]["runtime"] is None
+    assert cost["environment"]["started_utc"] and cost["environment"]["ended_utc"]
+
+
+def test_estimate_cost_is_an_upper_bound_on_counts():
+    from reachscan import estimate_cost
+    plan = [DepthSpec(0.0, 100), DepthSpec(1.0, 40)]
+    est = estimate_cost(plan, seconds_per_token=0.01, max_new_tokens=512)
+    assert est["total_rollouts"] == 140               # 100 + 40, no prepend (0.0 present)
+    assert est["max_gen_tokens"] == 140 * 512
+    assert abs(est["upper_bound_seconds"] - 140 * 512 * 0.01) < 1e-9
+    # prepend case: plan without f=0 gains the prompt-only row at plan[0].rollouts
+    est2 = estimate_cost([DepthSpec(0.5, 10)], seconds_per_token=0.01, max_new_tokens=8)
+    assert est2["total_rollouts"] == 20               # 10 + prepended 10
+
+
+def test_stitch_results_sums_cost_across_checkpoints():
+    """Checkpoint-by-depth then stitch must equal a single pass on seeds AND on
+    total generated tokens (the under-reporting footgun the helper fixes)."""
+    import tempfile
+    from reachscan.metadata import read_result, stitch_results, write_result
+
+    src = MockSource()
+    ps = UserPrefixSource(src.encode_prompt("Q"), src.encode_prompt("a b c d"))
+    proj = ModuloProjection(8, 4)
+    plan = [DepthSpec(0.0, 5), DepthSpec(0.5, 5), DepthSpec(1.0, 5)]
+    full = reach_scan(source=src, prefix_source=ps, projection=proj, plan=plan,
+                      rollout_sampler=SamplerPolicy(max_new_tokens=16), base_seed=7)
+
+    tmp = Path(tempfile.mkdtemp())
+    parts = []
+    for di in range(len(full.summaries)):
+        part = reach_scan(source=src, prefix_source=ps, projection=proj, plan=plan,
+                          rollout_sampler=SamplerPolicy(max_new_tokens=16), base_seed=7,
+                          run_depth_indices=[di])
+        write_result(part, tmp / f"d{di}")
+        parts.append(read_result(tmp / f"d{di}"))
+
+    stitched = stitch_results(parts)
+    assert [r.seed for r in stitched.receipts] == [r.seed for r in full.receipts]
+    assert (stitched.manifest["cost"]["work"]["gen_tokens_total"]
+            == full.manifest["cost"]["work"]["gen_tokens_total"])
+    assert stitched.manifest["stitched_from_checkpoints"] is True
+    assert "executed_depth_indices" not in stitched.manifest
+
+
+def test_read_result_tolerates_pre_0_2_8_artifacts_without_token_column():
+    """Old artifacts (no n_new_tokens column) still load; the count defaults to 0."""
+    import tempfile
+    from reachscan.metadata import read_result, write_result
+
+    src = MockSource()
+    ps = UserPrefixSource(src.encode_prompt("Q"), src.encode_prompt("a b c d"))
+    res = reach_scan(source=src, prefix_source=ps, projection=ModuloProjection(8, 4),
+                     plan=[DepthSpec(1.0, 4)], rollout_sampler=SamplerPolicy(max_new_tokens=16))
+    out = Path(tempfile.mkdtemp()) / "old"
+    write_result(res, out)
+    # strip the n_new_tokens column to simulate a pre-0.2.8 receipts file
+    rc = out / "receipts.csv"
+    lines = rc.read_text().splitlines()
+    header = lines[0].split(",")
+    drop = header.index("n_new_tokens")
+    stripped = [",".join(c for i, c in enumerate(row.split(",")) if i != drop) for row in lines]
+    rc.write_text("\n".join(stripped) + "\n")
+    loaded = read_result(out)              # must not raise
+    assert all(r.n_new_tokens == 0 for r in loaded.receipts)
+
+
+def test_on_progress_fires_once_per_rollout():
+    src = MockSource()
+    ps = UserPrefixSource(src.encode_prompt("Q"), src.encode_prompt("a b c d"))
+    seen = []
+    reach_scan(source=src, prefix_source=ps, projection=ModuloProjection(8, 4),
+               plan=[DepthSpec(0.0, 3), DepthSpec(1.0, 4)],
+               rollout_sampler=SamplerPolicy(max_new_tokens=16),
+               on_progress=lambda d: seen.append((d["depth_index"], d["rollout_index"])))
+    assert len(seen) == 7                  # 3 + 4 rollouts
+    assert seen[0] == (0, 0) and seen[-1] == (1, 3)
+
+
 # ----------------------------------------------------------------------------
 # Self-runner. KEEP THIS BLOCK AT THE END OF THE FILE: it collects only the
 # tests defined ABOVE it. In v0.2.0 it sat mid-file and `python

@@ -10,8 +10,10 @@ Wilson intervals).
 from __future__ import annotations
 
 import math
+import time
 from collections import Counter
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from hashlib import sha256
 from typing import Callable, Hashable, Sequence
 
@@ -68,6 +70,7 @@ class RolloutReceipt:
     bucket: Hashable | None
     is_target: bool
     hit_token_cap: bool  # generation length reached max_new_tokens (cap-hit audit)
+    n_new_tokens: int = 0  # generated-token count for THIS rollout (deterministic cost)
 
 
 @dataclass
@@ -125,9 +128,73 @@ def shannon_entropy_bits(counts: Sequence[int]) -> float:
 
 
 # --------------------------------------------------------------------------
+# Cost instrumentation (v0.2.8). The engine MEASURES; callers PRESENT. Two tiers,
+# never conflated: WORK (generated tokens) is deterministic given seed+model;
+# ENVIRONMENT (wall-clock, hardware) is noisy provenance, not a measurement.
+# The engine never imports torch — hardware identity comes FROM the source.
+# --------------------------------------------------------------------------
+def _safe_runtime(source) -> dict | None:
+    """Ask the source to describe its runtime (device, GPU, versions). Optional:
+    a source without describe_runtime contributes None, and a source that raises
+    cannot abort a scan. Keeps the engine substrate-agnostic (no torch here)."""
+    fn = getattr(source, "describe_runtime", None)
+    if not callable(fn):
+        return None
+    try:
+        return fn()
+    except Exception as exc:  # a misbehaving source must not kill the run
+        return {"error": repr(exc)}
+
+
+def _cost_block(gen_tokens_by_depth: dict[str, int],
+                wall_clock_by_depth: dict[str, float],
+                runtime: dict | None,
+                started_utc: str, ended_utc: str) -> dict:
+    """Assemble the cost record. `work` is reproducible; `environment` is not."""
+    return {
+        "work": {
+            "gen_tokens_total": sum(gen_tokens_by_depth.values()),
+            "gen_tokens_by_depth": dict(gen_tokens_by_depth),
+        },
+        "environment": {
+            "wall_clock_s_total": round(sum(wall_clock_by_depth.values()), 6),
+            "wall_clock_s_by_depth": dict(wall_clock_by_depth),
+            "runtime": runtime,
+            "started_utc": started_utc,
+            "ended_utc": ended_utc,
+        },
+    }
+
+
+def estimate_cost(plan: Sequence[DepthSpec], *, seconds_per_token: float,
+                  max_new_tokens: int, include_prompt_only: bool = True) -> dict:
+    """Rough a-priori cost estimate for a plan. The rollout COUNT is exact; the
+    SECONDS are an UPPER bound and a calibrated guess — label any printed number
+    'estimated'. `seconds_per_token` is typically measured by timing the
+    reference-trace generation. The bound assumes every rollout fills
+    max_new_tokens and uses the trace-generation token rate, so it ignores the
+    extra prefill cost at deeper prefixes; actual cost is lower when rollouts stop
+    early. Prefer refining this live once depth 0 has really run (see the cost
+    block in the result manifest)."""
+    fractions_present = {round(d.fraction, 6) for d in plan}
+    prepend = include_prompt_only and 0.0 not in fractions_present and bool(plan)
+    total_rollouts = sum(d.rollouts for d in plan) + (plan[0].rollouts if prepend else 0)
+    max_gen_tokens = total_rollouts * int(max_new_tokens)
+    return {
+        "total_rollouts": total_rollouts,
+        "max_gen_tokens": max_gen_tokens,
+        "seconds_per_token": float(seconds_per_token),
+        "upper_bound_seconds": max_gen_tokens * float(seconds_per_token),
+        "basis": ("UPPER bound: assumes every rollout fills max_new_tokens at the "
+                  "trace-generation token rate; ignores deeper-prefix prefill. "
+                  "Actual is lower if rollouts stop early — refine live after depth 0."),
+    }
+
+
+# --------------------------------------------------------------------------
 # The engine
 # --------------------------------------------------------------------------
-_ENGINE_SCHEMA_VERSION = "0.2.4"  # rate_defined on summaries; field serialized to summary CSV
+_ENGINE_SCHEMA_VERSION = "0.2.8"  # + n_new_tokens on receipts; + cost block on manifest
 
 
 def reach_scan(
@@ -142,6 +209,7 @@ def reach_scan(
     include_prompt_only: bool = True,
     run_depth_indices: Sequence[int] | None = None,
     on_depth_complete: Callable[[ReachScanResult], None] | None = None,
+    on_progress: Callable[[dict], None] | None = None,
 ) -> ReachScanResult:
     """Run a reach-scan. Every input is an explicit parameter or a named
     contract — there are no hidden inputs, and every input lands in the manifest.
@@ -157,7 +225,12 @@ def reach_scan(
     for checkpoint/resume workflows; default behavior runs every depth.
 
     on_depth_complete: optional callback invoked after each completed depth with
-    the current partial ReachScanResult. The callback must not mutate the result."""
+    the current partial ReachScanResult (whose manifest already carries the
+    running cost block). The callback must not mutate the result.
+
+    on_progress: optional callback invoked after EACH rollout with a small dict
+    ({depth_index, rollout_index, rollouts_in_depth, depths_total}); the notebook
+    wraps it in a progress bar. Default None keeps the library silent."""
     prompt = list(prefix_source.prompt_ids())
     trace = list(prefix_source.reference_trace_ids())
     L = len(trace)
@@ -218,6 +291,17 @@ def reach_scan(
     if selected_depths is not None:
         manifest["executed_depth_indices"] = sorted(selected_depths)
 
+    runtime = _safe_runtime(source)
+    gen_tokens_by_depth: dict[str, int] = {}
+    wall_clock_by_depth: dict[str, float] = {}
+    started_utc = datetime.now(timezone.utc).isoformat()
+
+    def _manifest_with_cost() -> dict:
+        m = dict(manifest)
+        m["cost"] = _cost_block(gen_tokens_by_depth, wall_clock_by_depth, runtime,
+                                started_utc, datetime.now(timezone.utc).isoformat())
+        return m
+
     result = ReachScanResult()
     result.manifest = dict(manifest)
     for depth_index, spec in enumerate(full_plan):
@@ -230,6 +314,8 @@ def reach_scan(
 
         answers: list[ExtractedAnswer] = []
         cap_flags: list[bool] = []
+        depth_tokens = 0
+        depth_t0 = time.perf_counter()
         for r in range(spec.rollouts):
             seed = derive_seed(base_seed, depth_index, r)
             new_ids = source.sample_completion(
@@ -242,7 +328,9 @@ def reach_scan(
                 stop_token_ids=stop_token_ids,
                 seed=seed,
             )
-            hit_cap = len(new_ids) >= rollout_sampler.max_new_tokens
+            n_new = len(new_ids)
+            depth_tokens += n_new
+            hit_cap = n_new >= rollout_sampler.max_new_tokens
             text = source.decode(new_ids)
             ans = projection.extract(text)
             answers.append(ans)
@@ -262,17 +350,28 @@ def reach_scan(
                     bucket=bucket,
                     is_target=tgt,
                     hit_token_cap=hit_cap,
+                    n_new_tokens=n_new,
                 )
             )
+            if on_progress is not None:
+                on_progress({
+                    "depth_index": depth_index,
+                    "rollout_index": r,
+                    "rollouts_in_depth": spec.rollouts,
+                    "depths_total": len(full_plan),
+                })
 
+        gen_tokens_by_depth[str(depth_index)] = depth_tokens
+        wall_clock_by_depth[str(depth_index)] = round(time.perf_counter() - depth_t0, 6)
         result.summaries.append(
             _summarize_depth(spec, committed_len, answers, projection,
                              cap_hits=sum(cap_flags))
         )
+        result.manifest = _manifest_with_cost()
         if on_depth_complete is not None:
             on_depth_complete(result)
 
-    result.manifest = dict(manifest)
+    result.manifest = _manifest_with_cost()
     return result
 
 
