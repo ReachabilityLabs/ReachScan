@@ -194,12 +194,14 @@ src/reachscan/
   metadata.py         # provenance stamping + receipts/summary writers
   contrast.py         # source-conditioned separation (the diagnostic kernel)
   projection_pack.py  # v0.3.0 projection packs: load, behavior-bearing hash, fixtures
+  prediction.py       # v0.3.1 prediction evaluator: morphology verdict from receipts
   tools/run_demo.py   # the reachscan-demo CLI
-  tools/cli.py        # the `reachscan projection validate|inspect` CLI
+  tools/cli.py        # `reachscan projection validate|inspect` + `prediction evaluate`
 examples/projections/floor_sum_mod8/   # the flagship as a formal projection pack
 tests/
   test_engine.py      # engine correctness + seed/plan guards
   test_projection_pack.py  # pack load/hash/fixtures + receipt/manifest binding
+  test_prediction.py       # prediction evaluator: fixtures + verification checks
   test_run_contract.py     # the notebook run-contract gate
 ```
 

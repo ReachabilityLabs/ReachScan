@@ -206,15 +206,20 @@ def _test_family_before_atom(receipts, spec, declared_classes, target_class) -> 
     initial_target_min = float(spec.get("require_initial_target_mass_above", 0.0))
     tid = str(spec["id"])
 
-    by_depth: dict[float, list] = defaultdict(list)
+    # A usable depth needs enough PARSED (ok) answers. A depth dominated by
+    # no_answer/invalid cannot speak to morphology — extraction/yield failure is
+    # not a family collapse — so masses are computed over ok rows only, and a
+    # depth without min_n ok rows is dropped (thin/failed yield -> inconclusive).
+    ok_by_depth: dict[float, list] = defaultdict(list)
     for row in receipts:
-        by_depth[float(row["depth_fraction"])].append(row)
-    depths = [d for d in sorted(by_depth) if len(by_depth[d]) >= min_n]
+        if row.get("parse_status", "ok") == "ok":
+            ok_by_depth[float(row["depth_fraction"])].append(row)
+    depths = [d for d in sorted(ok_by_depth) if len(ok_by_depth[d]) >= min_n]
     if len(depths) < 2:
         return TestVerdict(tid, "family_before_atom", INCONCLUSIVE, None, None,
-                           len(depths), "too few usable depths")
+                           len(depths), "too few depths with enough parsed (ok) answers")
 
-    first_rows = by_depth[depths[0]]
+    first_rows = ok_by_depth[depths[0]]
     first_target_mass = sum(
         1 for r in first_rows if r["projection_class"] == target_class) / len(first_rows)
     if first_target_mass < initial_target_min:
@@ -225,10 +230,10 @@ def _test_family_before_atom(receipts, spec, declared_classes, target_class) -> 
     family_depth = None
     atom_depth = None
     for depth in depths:
-        rows = by_depth[depth]
+        rows = ok_by_depth[depth]                       # ok answers only
         target_mass = sum(
             1 for r in rows if r["projection_class"] == target_class) / len(rows)
-        wrong = _wrong_ok(rows)
+        wrong = [r for r in rows if not bool(r["target_hit"])]
         atom_mass = 0.0
         if wrong:
             atom_mass = max(Counter(r["parsed_answer"] for r in wrong).values()) / len(wrong)

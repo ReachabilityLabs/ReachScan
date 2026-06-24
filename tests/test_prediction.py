@@ -115,6 +115,29 @@ def test_thin_data_is_inconclusive_never_supported():
     assert v.outcome == "inconclusive"
 
 
+def test_family_before_atom_rejects_no_answer_depth_as_collapse():
+    """Regression: a deep depth that is all no_answer must NOT read as a family
+    collapse. Yield/extraction failure is not morphology -> inconclusive."""
+    rows = _expand([
+        # depth 0.0: viable target (parsed answers present)
+        {"count": 20, "depth_fraction": 0.0, "projection_class": "residue_4",
+         "target_hit": True, "parse_status": "ok", "parsed_answer": 532},
+        {"count": 20, "depth_fraction": 0.0, "projection_class": "residue_2",
+         "target_hit": False, "parse_status": "ok", "parsed_answer_start": 900},
+        # depth 0.9: extraction failed entirely -> all no_answer
+        {"count": 40, "depth_fraction": 0.9, "projection_class": "no_answer",
+         "target_hit": False, "parse_status": "no_answer", "parsed_answer": None},
+    ])
+    pred = {"loss_rule": "any_test_failed", "tests": [
+        {"id": "fba", "type": "family_before_atom", "family_collapsed_below": 0.20,
+         "atom_won_above": 0.55, "min_n_per_depth": 30,
+         "require_initial_target_mass_above": 0.20}]}
+    v = evaluate_prediction(rows, pred, CASES["declared_classes"], "residue_4")
+    assert v.outcome == "inconclusive"
+    assert v.tests[0].outcome == "inconclusive"
+    assert "parsed" in v.tests[0].detail  # "too few depths with enough parsed (ok) answers"
+
+
 # --------------------------------------------------------------------------
 # Hashing
 # --------------------------------------------------------------------------

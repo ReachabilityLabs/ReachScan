@@ -1,10 +1,10 @@
-"""reachscan CLI group (v0.3.0).
+"""reachscan CLI group (v0.3.x).
 
-Subcommands for projection packs. The prediction evaluator (`prediction evaluate`)
-is a later phase and is intentionally not wired here yet.
+Subcommands for projection packs and prediction verdicts.
 
     reachscan projection validate examples/projections/floor_sum_mod8
     reachscan projection inspect  examples/projections/floor_sum_mod8
+    reachscan prediction evaluate <run_dir> --projection examples/projections/floor_sum_mod8
 """
 from __future__ import annotations
 
