@@ -93,7 +93,7 @@
   `10.5281/zenodo.20808923`; v0.2.5 PENDING until deposit). Author ORCID
   (`0009-0006-3649-4438`) is in `CITATION.cff` and `.zenodo.json`.
 - **Notebook prose cleanup ships here.** The quickstart notebook's conversational
-  scaffolding ("be your own first user") was stripped on `main` after the v0.2.4
+  scaffolding was stripped on `main` after the v0.2.4
   tag was cut; the frozen v0.2.4 deposit still carries the old prose. The v0.2.5
   deposit self-corrects it rather than re-cutting v0.2.4.
 - `examples/demo_run/` regenerated under v0.2.5 (framework stamp only; R_T values
