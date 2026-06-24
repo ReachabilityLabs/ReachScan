@@ -12,8 +12,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict
 
-FRAMEWORK_NAME = "Reachability Labs reachscan v0.2.9"
-FRAMEWORK_TAG = "Nothem Reachability / reach-scan instrument v0.2.9"
+FRAMEWORK_NAME = "Reachability Labs reachscan v0.3.0"
+FRAMEWORK_TAG = "Nothem Reachability / reach-scan instrument v0.3.0"
 CITATION_TEXT = (
     "If you use this instrument or the reach-scan measurement framing, please cite "
     "M.R. Nothem (2026), Reachability Labs, and the associated paper."
@@ -101,6 +101,19 @@ def write_result(result, outdir: str | Path) -> Path:
             "is_target": int(r.is_target),
             "hit_token_cap": int(r.hit_token_cap),
             "n_new_tokens": r.n_new_tokens,
+            "projection_class": r.projection_class,
+            "parsed_answer": r.parsed_answer,
+            "target_hit": int(r.target_hit),
+            "parse_status": r.parse_status,
+            "projection_id": r.projection_id,
+            "projection_version": r.projection_version,
+            "projection_pack_hash": r.projection_pack_hash,
+            "source_arm": r.source_arm,
+            "answer_exposed_in_prefix": (
+                "" if r.answer_exposed_in_prefix is None else int(r.answer_exposed_in_prefix)),
+            "exposure_check_id": r.exposure_check_id,
+            "exposure_check_status": r.exposure_check_status,
+            "raw_completion": r.raw_completion,
         }
         for r in result.receipts
     ]
@@ -192,6 +205,22 @@ def read_result(outdir: str | Path):
                 # Backward-compat: pre-0.2.8 artifacts have no token column.
                 n_new_tokens=(int(row["n_new_tokens"])
                               if row.get("n_new_tokens") not in (None, "") else 0),
+                # Backward-compat: pre-0.3.0 artifacts have no projection columns.
+                projection_class=(row.get("projection_class") or None),
+                parsed_answer=(row["parsed_answer"]
+                               if row.get("parsed_answer") not in (None, "") else None),
+                target_hit=bool(int(row["target_hit"])) if row.get("target_hit") not in (None, "") else False,
+                parse_status=(row.get("parse_status") or "ok"),
+                projection_id=(row.get("projection_id") or None),
+                projection_version=(row.get("projection_version") or None),
+                projection_pack_hash=(row.get("projection_pack_hash") or None),
+                source_arm=(row.get("source_arm") or None),
+                answer_exposed_in_prefix=(
+                    bool(int(row["answer_exposed_in_prefix"]))
+                    if row.get("answer_exposed_in_prefix") not in (None, "") else None),
+                exposure_check_id=(row.get("exposure_check_id") or None),
+                exposure_check_status=(row.get("exposure_check_status") or "not_checked"),
+                raw_completion=(row.get("raw_completion") or ""),
             )
         )
 

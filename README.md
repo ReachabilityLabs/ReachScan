@@ -17,7 +17,7 @@ This is the language-model sibling of the oracle-backed random 3-SAT
 The two share a measurement grammar (committed state → reachable future); the
 substrates and guarantees differ.
 
-> Status: v0.2.9. The engine and reference components are tested. The worked example
+> Status: v0.3.0. The engine and reference components are tested. The worked example
 > reproduces the *shape* of the flagship result on a mock or a small live model; it
 > is not a release of production data.
 
@@ -148,6 +148,30 @@ projection = ModuloProjection(8, target_residue=4)
 
 The flagship is a *configuration* of the general instrument, not a special path.
 
+## Projection packs (v0.3.0)
+
+A **projection pack** makes a task lens executable and auditable: a directory that
+declares the parser, the outcome check, the projection classes, and labeled
+fixtures, fingerprinted by a **behavior-bearing** hash over its
+`projection.yaml` + `adapter.py` + `fixtures.jsonl` (so a parser edit cannot keep
+the same identity). The flagship as a pack lives in
+[`examples/projections/floor_sum_mod8/`](examples/projections/floor_sum_mod8/).
+
+```bash
+pip install -e ".[projection]"
+reachscan projection validate examples/projections/floor_sum_mod8
+```
+
+A loaded pack also satisfies the `Projection` protocol, so `reach_scan` runs it
+directly; a pack-driven run binds the `projection_pack` block (id, version, hash,
+declared classes, claim level, fixture-validation result) into `run_manifest.json`
+and records `projection_class` + projection identity on every receipt. The engine
+stays generic — a plain projection produces no pack block, and `engine_schema`
+moved `0.2.8 → 0.3.0` only because receipts and the manifest grew.
+
+> The predeclared `prediction` block in a pack is carried and hashed but not yet
+> *evaluated* — the prediction verdict layer is the next phase.
+
 ## Repo layout
 
 ```text
@@ -159,9 +183,15 @@ src/reachscan/
   mock_source.py      # zero-dependency test fixture (NOT a real model)
   hf_source.py        # HuggingFaceSource — the live path (optional [hf] extra)
   metadata.py         # provenance stamping + receipts/summary writers
+  contrast.py         # source-conditioned separation (the diagnostic kernel)
+  projection_pack.py  # v0.3.0 projection packs: load, behavior-bearing hash, fixtures
   tools/run_demo.py   # the reachscan-demo CLI
+  tools/cli.py        # the `reachscan projection validate|inspect` CLI
+examples/projections/floor_sum_mod8/   # the flagship as a formal projection pack
 tests/
   test_engine.py      # engine correctness + seed/plan guards
+  test_projection_pack.py  # pack load/hash/fixtures + receipt/manifest binding
+  test_run_contract.py     # the notebook run-contract gate
 ```
 
 ## Use it on your own task

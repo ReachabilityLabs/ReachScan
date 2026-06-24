@@ -71,6 +71,19 @@ class RolloutReceipt:
     is_target: bool
     hit_token_cap: bool  # generation length reached max_new_tokens (cap-hit audit)
     n_new_tokens: int = 0  # generated-token count for THIS rollout (deterministic cost)
+    # --- v0.3.0 projection-pack binding (None/defaults when no pack is used) ---
+    projection_class: str | None = None   # the declared class (residue_4 / no_answer / invalid)
+    parsed_answer: str | None = None       # = value; the spec's parsed_answer column
+    target_hit: bool = False               # outcome check (exact correct answer), distinct from is_target
+    parse_status: str = "ok"               # ok | no_answer | truncated | invalid
+    projection_id: str | None = None
+    projection_version: str | None = None
+    projection_pack_hash: str | None = None
+    source_arm: str | None = None
+    answer_exposed_in_prefix: bool | None = None
+    exposure_check_id: str | None = None
+    exposure_check_status: str = "not_checked"
+    raw_completion: str = ""               # raw model text (the spec's raw_completion evidence)
 
 
 @dataclass
@@ -194,7 +207,7 @@ def estimate_cost(plan: Sequence[DepthSpec], *, seconds_per_token: float,
 # --------------------------------------------------------------------------
 # The engine
 # --------------------------------------------------------------------------
-_ENGINE_SCHEMA_VERSION = "0.2.8"  # + n_new_tokens on receipts; + cost block on manifest
+_ENGINE_SCHEMA_VERSION = "0.3.0"  # + projection-pack receipt columns + manifest projection block
 
 
 def reach_scan(
@@ -208,6 +221,7 @@ def reach_scan(
     stop_token_ids: Sequence[int] | None = None,
     include_prompt_only: bool = True,
     run_depth_indices: Sequence[int] | None = None,
+    source_arm: str = "natural_trace",
     on_depth_complete: Callable[[ReachScanResult], None] | None = None,
     on_progress: Callable[[dict], None] | None = None,
 ) -> ReachScanResult:
@@ -287,9 +301,24 @@ def reach_scan(
                       else round(d.fraction * L))}
                  for d in full_plan],
         "seed_rule": "sha256(base_seed|depth_index|rollout_index)[:8]; seeds in [0, 2**64)",
+        "source_arm": source_arm,
     }
+    # v0.3.0: bind a projection pack's declared lens into the manifest when present.
+    # The engine stays generic — a plain Projection has no pack_meta and the block
+    # is simply absent. `projection` (the name string) is kept for back-compat.
+    pack_meta = getattr(projection, "pack_meta", None)
+    if isinstance(pack_meta, dict):
+        manifest["projection_pack"] = dict(pack_meta)
     if selected_depths is not None:
         manifest["executed_depth_indices"] = sorted(selected_depths)
+
+    # Per-receipt projection identity (constants) + whether the projection offers
+    # an outcome check distinct from target-class membership.
+    _proj_id = pack_meta.get("projection_id") if isinstance(pack_meta, dict) else None
+    _proj_ver = pack_meta.get("projection_version") if isinstance(pack_meta, dict) else None
+    _proj_hash = pack_meta.get("projection_pack_hash") if isinstance(pack_meta, dict) else None
+    _has_is_correct = isinstance(pack_meta, dict) and callable(
+        getattr(projection, "is_correct", None)) and callable(getattr(projection, "parse", None))
 
     runtime = _safe_runtime(source)
     gen_tokens_by_depth: dict[str, int] = {}
@@ -338,6 +367,26 @@ def reach_scan(
 
             bucket = projection.project(ans) if ans.is_ok else None
             tgt = projection.is_target(ans) if ans.is_ok else False
+
+            # v0.3.0 projection readout for the receipt. projection_class is the
+            # declared class; target_hit is the exact OUTCOME check (distinct from
+            # is_target, which is target-CLASS membership) when the projection
+            # offers one. A plain projection falls back to is_target.
+            if ans.is_ok:
+                proj_class = str(bucket)
+                if _has_is_correct:
+                    try:
+                        target_hit = bool(projection.is_correct(projection.parse(text)))
+                    except Exception:
+                        target_hit = tgt
+                else:
+                    target_hit = tgt
+                parse_status = "invalid" if proj_class == "invalid" else "ok"
+            else:
+                proj_class = ans.status           # no_answer / truncated
+                target_hit = False
+                parse_status = ans.status
+
             result.receipts.append(
                 RolloutReceipt(
                     depth_index=depth_index,
@@ -351,6 +400,18 @@ def reach_scan(
                     is_target=tgt,
                     hit_token_cap=hit_cap,
                     n_new_tokens=n_new,
+                    projection_class=proj_class,
+                    parsed_answer=ans.value,
+                    target_hit=target_hit,
+                    parse_status=parse_status,
+                    projection_id=_proj_id,
+                    projection_version=_proj_ver,
+                    projection_pack_hash=_proj_hash,
+                    source_arm=source_arm,
+                    answer_exposed_in_prefix=None,
+                    exposure_check_id=None,
+                    exposure_check_status="not_checked",
+                    raw_completion=text,
                 )
             )
             if on_progress is not None:

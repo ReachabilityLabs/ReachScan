@@ -1,5 +1,5 @@
 """reachscan — measure the future field of a committed reasoning prefix."""
-__version__ = "0.2.9"
+__version__ = "0.3.0"
 
 from .contracts import (
     ExtractedAnswer,
@@ -21,3 +21,12 @@ from .projections import ExactMatch, ModuloProjection, TargetFiber
 from .prefix_sources import GeneratedPrefixSource, UserPrefixSource
 from .mock_source import MockSource
 from .contrast import source_separation, SeparationCurve, SeparationRow
+from .projection_pack import (
+    ProjectionPack,
+    ProjectionFixture,
+    PackHash,
+    hash_projection_pack,
+    load_projection_pack,
+    load_fixtures,
+    validate_fixtures,
+)

@@ -1,0 +1,90 @@
+projection_id: floor_sum_mod8
+projection_version: 0.1.0
+task_family: arithmetic.floor_sum
+answer_space_type: integer
+claim_level: morphology_demo
+
+hash:
+  algorithm: sha256
+  id: projection_pack_hash
+  scope:
+    - projection.yaml
+    - adapter.py
+    - fixtures.jsonl
+
+target:
+  type: exact
+  value: 532
+
+parser:
+  name: boxed_or_final_integer
+  function: parse
+
+outcome_checker:
+  name: exact_match
+  function: is_correct
+  acceptable_answers:
+    - 532
+
+projection:
+  name: mod_residue
+  function: classify
+  modulus: 8
+  target_class: residue_4
+  classes:
+    - residue_0
+    - residue_1
+    - residue_2
+    - residue_3
+    - residue_4
+    - residue_5
+    - residue_6
+    - residue_7
+    - no_answer
+    - invalid
+
+# Predeclared prediction block (Phase 4 evaluator not yet implemented in code;
+# carried here so it is hashed with the pack and ready for `prediction evaluate`).
+prediction:
+  description: >
+    Wrong answers organize by the declared residue families; the family-grain
+    field collapses before any single wrong atom dominates.
+  loss_rule: any_test_failed
+  applies_to:
+    source_arm: any
+  tests:
+    - id: families_are_real
+      type: family_structure
+      depth_band: [0.85, 1.0]
+      expected_mode: concentrated
+      max_entropy: 0.75
+      min_entropy: 0.85
+      min_n: 30
+    - id: is_capture
+      type: morphology_mode
+      depth_band: [0.85, 1.0]
+      predicted_mode: capture
+      capture_max: 0.55
+      shatter_min: 0.85
+      min_n: 30
+    - id: family_before_atom
+      type: family_before_atom
+      family_collapsed_below: 0.20
+      atom_won_above: 0.55
+      min_n_per_depth: 30
+      require_initial_target_mass_above: 0.20
+
+controls:
+  requires_predeclared_classes: true
+  exposure_policy:
+    smoke: optional
+    pipeline_validation: optional
+    morphology_demo: recommended
+    bounded_scientific_measurement: required
+    cross_model_measurement: required
+    cross_task_measurement: required
+    generality_claim: required
+  exposure_fields:
+    - answer_exposed_in_prefix
+    - exposure_check_id
+    - exposure_check_status

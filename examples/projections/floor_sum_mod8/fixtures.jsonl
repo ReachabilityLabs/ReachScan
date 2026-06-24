@@ -1,0 +1,11 @@
+{"raw_text": "The final answer is \\boxed{532}.", "parsed_answer": 532, "target_hit": true, "projection_class": "residue_4"}
+{"raw_text": "After simplifying I get \\boxed{540}.", "parsed_answer": 540, "target_hit": false, "projection_class": "residue_4"}
+{"raw_text": "Therefore the answer is 914.", "parsed_answer": 914, "target_hit": false, "projection_class": "residue_2"}
+{"raw_text": "So the total is \\boxed{528}.", "parsed_answer": 528, "target_hit": false, "projection_class": "residue_0"}
+{"raw_text": "I conclude \\boxed{537}.", "parsed_answer": 537, "target_hit": false, "projection_class": "residue_1"}
+{"raw_text": "The sum equals \\boxed{531}.", "parsed_answer": 531, "target_hit": false, "projection_class": "residue_3"}
+{"raw_text": "Hence \\boxed{533}.", "parsed_answer": 533, "target_hit": false, "projection_class": "residue_5"}
+{"raw_text": "Final: \\boxed{534}.", "parsed_answer": 534, "target_hit": false, "projection_class": "residue_6"}
+{"raw_text": "That gives \\boxed{535}.", "parsed_answer": 535, "target_hit": false, "projection_class": "residue_7"}
+{"raw_text": "I cannot determine the value from the given work.", "parsed_answer": null, "target_hit": false, "projection_class": "no_answer"}
+{"raw_text": "The ratio is \\boxed{5/8}.", "parsed_answer": "5/8", "target_hit": false, "projection_class": "invalid"}

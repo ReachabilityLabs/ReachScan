@@ -1,5 +1,43 @@
 # Changelog
 
+## 0.3.0 — 2026-06-24 (projection packs + receipt/manifest binding; engine_schema 0.2.8 → 0.3.0)
+
+Implements Phases 1–3 of the projection/prediction operationalization handoff
+(v2.1): the **projection pack** system and its binding into receipts and the
+manifest. (The prediction *evaluator* — Phase 4 — is intentionally NOT in this
+release; the predeclared `prediction` block is carried and hashed, not yet
+executed.)
+
+- **`reachscan.projection_pack`** — a projection pack is a directory
+  (`projection.yaml` + `adapter.py` + `fixtures.jsonl` + README) that declares a
+  task-specific answer lens:
+  - `load_projection_pack()` builds a pack that **also satisfies the engine
+    `Projection` protocol**, so `reach_scan` runs a pack with no engine changes.
+  - `hash_projection_pack()` computes a **behavior-bearing** `projection_pack_hash`
+    over `projection.yaml` + `adapter.py` + `fixtures.jsonl` (path + bytes) — a
+    parser/classifier edit cannot keep the same hash (spec-only hashing was the
+    failure mode v2.1 hardened against).
+  - `validate_fixtures()` runs labeled fixtures through the adapter and flips
+    `fixtures_validated` only on a clean pass; an undeclared emitted class fails loud.
+- **Floor-sum pack** — `examples/projections/floor_sum_mod8/` (the flagship as a
+  formal pack), with a self-contained adapter and a `run_pack_demo.py`. It encodes
+  the deliberate gap between the **outcome check** (exact 532) and the **projection
+  class** (residue fiber `residue_4`, which also contains 540, 916, …).
+- **Engine binding (the unfreeze).** Receipts gain `projection_class`,
+  `parsed_answer`, `target_hit` (the exact outcome check, distinct from `is_target`
+  = target-class membership), `parse_status`, `projection_id/version/pack_hash`,
+  `source_arm`, exposure fields (stubbed `not_checked` at this claim level), and
+  `raw_completion`. The manifest gains a `projection_pack` block and `source_arm`.
+  The engine stays generic: a plain projection has no `pack_meta`, so the block is
+  absent and the run-constant columns are empty (**back-compatible**).
+- **CLI** `reachscan projection validate|inspect <pack_dir>` (new `reachscan`
+  console entry point); the existing `manifest["projection"]` name string is kept.
+- **Deps:** YAML is gated behind a new optional `projection` extra (`pip install
+  reachscan[projection]`); `import reachscan` stays dependency-free (lazy import).
+- **Schema:** `engine_schema` `0.2.8 → 0.3.0` (receipts + manifest grew).
+  `read_result` tolerates pre-0.3.0 artifacts (new columns default empty). Tests
+  50 → 66 (`tests/test_projection_pack.py`). Demo + `MANIFEST.sha256` regenerated.
+
 ## 0.2.9 — 2026-06-24 (notebook checkpoint-stitch correctness; no schema bump)
 
 - **The quickstart notebook now assembles checkpoints with `stitch_results()`**
