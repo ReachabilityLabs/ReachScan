@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.2.9 — 2026-06-24 (notebook checkpoint-stitch correctness; no schema bump)
+
+- **The quickstart notebook now assembles checkpoints with `stitch_results()`**
+  instead of copying the first checkpoint's manifest. v0.2.8 added a per-checkpoint
+  `cost` block; because each per-depth checkpoint only covers its own depth, the
+  old hand-rolled stitch (keep depth 0's manifest) **under-reported total generated
+  tokens and wall-clock by roughly the depth count** in the final
+  `run_manifest.json`. `stitch_results()` concatenates depths in order and sums the
+  cost block, so a checkpointed (e.g. disconnect-resumed) Colab run now reports the
+  same total cost as a single pass. Per-rollout receipts were always correct; only
+  the rolled-up cost summary was affected.
+- **Regression test** (`test_notebook_style_stitch_reports_full_run_cost`) asserts
+  the old single-manifest approach under-reports and that the notebook's exact
+  `stitch_results([...])` expression matches a single-pass run on both total tokens
+  and seeds. Tests 49 → 50.
+- No engine/measurement change: `engine_schema` stays `0.2.8`; floor-sum R_T values
+  unchanged. Package/provenance version bumped 0.2.8 → 0.2.9; demo + `MANIFEST.sha256`
+  regenerated.
+
 ## 0.2.8 — 2026-06-24 (cost instrumentation; first schema bump since 0.2.4)
 
 **What a scan now reports about its own cost.** The engine measures; callers

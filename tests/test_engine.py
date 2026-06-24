@@ -815,6 +815,41 @@ def test_on_progress_fires_once_per_rollout():
     assert seen[0] == (0, 0) and seen[-1] == (1, 3)
 
 
+def test_notebook_style_stitch_reports_full_run_cost():
+    """v0.2.9 regression: the quickstart notebook assembles per-depth checkpoints
+    with stitch_results, NOT by copying the first checkpoint's manifest. The old
+    manual approach kept only depth 0's cost block, under-reporting total tokens;
+    stitch_results sums across depths and matches a single pass."""
+    import tempfile
+    from reachscan.metadata import read_result, stitch_results, write_result
+
+    src = MockSource()
+    ps = UserPrefixSource(src.encode_prompt("Q"), src.encode_prompt("a b c d"))
+    proj = ModuloProjection(8, 4)
+    plan = [DepthSpec(0.0, 6), DepthSpec(0.5, 6), DepthSpec(1.0, 6)]
+    full = reach_scan(source=src, prefix_source=ps, projection=proj, plan=plan,
+                      rollout_sampler=SamplerPolicy(max_new_tokens=16), base_seed=3)
+    full_tokens = full.manifest["cost"]["work"]["gen_tokens_total"]
+
+    tmp = Path(tempfile.mkdtemp())
+    parts_by_depth = {}
+    for di in range(len(plan)):
+        part = reach_scan(source=src, prefix_source=ps, projection=proj, plan=plan,
+                          rollout_sampler=SamplerPolicy(max_new_tokens=16), base_seed=3,
+                          run_depth_indices=[di])
+        write_result(part, tmp / f"depth_{di:03d}")
+        parts_by_depth[di] = read_result(tmp / f"depth_{di:03d}")
+
+    # The OLD manual approach (keep depth 0's manifest) under-reports total cost:
+    first_only = parts_by_depth[0].manifest["cost"]["work"]["gen_tokens_total"]
+    assert first_only < full_tokens                       # the bug v0.2.9 fixes
+
+    # The notebook now uses exactly this expression; it sums cost across depths:
+    result = stitch_results([parts_by_depth[i] for i in range(len(plan))])
+    assert result.manifest["cost"]["work"]["gen_tokens_total"] == full_tokens
+    assert [r.seed for r in result.receipts] == [r.seed for r in full.receipts]
+
+
 # ----------------------------------------------------------------------------
 # Self-runner. KEEP THIS BLOCK AT THE END OF THE FILE: it collects only the
 # tests defined ABOVE it. In v0.2.0 it sat mid-file and `python
