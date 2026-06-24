@@ -1,8 +1,10 @@
-"""Re-project an ExactMatch reach-scan's receipts into the mod-8 family view.
+"""Recompute the mod-8 family view from reach-scan receipts.
 
-Reads ``receipts.csv`` from a run that used ``ExactMatch(532)`` and recomputes
-target reachability under ``ModuloProjection(8, target_residue=4)`` from the same
-extracted answers — no model rerun. One GPU run, two projection lenses.
+Reads ``receipts.csv`` and recomputes target reachability under
+``ModuloProjection(8, target_residue=4)`` from the same extracted answers — no
+model rerun. For v0.3.3 Llama runs, ``floor_sum_mod8`` is already the primary
+projection pack, so this script is a consistency/helper view. It also supports
+older ExactMatch-primary artifacts.
 
 Usage::
 
@@ -19,7 +21,7 @@ from reachscan import ExtractedAnswer, ModuloProjection
 
 
 def reproject(receipts_csv: str | Path, modulus: int = 8, target_residue: int = 4):
-    """Per-depth mod-``modulus`` reachability from an ExactMatch run's receipts.
+    """Per-depth mod-``modulus`` reachability from a run's extracted answers.
 
     Uses the engine's own ``ModuloProjection`` so the buckets match exactly what a
     native mod-k run would have produced.
