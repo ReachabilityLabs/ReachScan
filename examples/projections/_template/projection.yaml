@@ -1,0 +1,53 @@
+projection_id: my_task              # TODO: rename to your task
+projection_version: 0.1.0
+task_family: example.template       # TODO
+answer_space_type: integer          # TODO: integer / string / choice / …
+claim_level: morphology_demo        # what this lens is allowed to support — see docs/CLAIM_LADDER.md
+
+hash:
+  algorithm: sha256
+  id: projection_pack_hash
+  scope:
+    - projection.yaml
+    - adapter.py
+    - fixtures.jsonl
+
+target:
+  type: exact
+  value: 42                         # TODO: your correct answer
+
+parser:
+  name: last_integer                # TODO: describe your extractor
+  function: parse
+
+outcome_checker:
+  name: exact_match
+  function: is_correct
+
+projection:
+  name: target_or_other            # TODO: describe your class scheme
+  function: classify
+  target_class: target             # which class is the target set
+  classes:                         # EVERY class your classify() can emit must be listed
+    - target
+    - other
+    - no_answer
+    - invalid
+
+# Optional predeclared prediction block (see docs/PREDICTION_CONTRACT.md). Uncomment
+# and fill in only when you are ready to make a morphology claim; leave it out for a
+# lens-only pack. The thresholds hash with the pack and cannot be tuned post-hoc.
+#
+# prediction:
+#   description: >
+#     What morphology would count as support.
+#   loss_rule: any_test_failed
+#   applies_to:
+#     source_arm: any
+#   tests:
+#     - id: families_are_real
+#       type: family_structure
+#       depth_band: [0.85, 1.0]
+#       expected_mode: concentrated
+#       max_entropy: 0.75
+#       min_n: 30

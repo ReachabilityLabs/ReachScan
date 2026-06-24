@@ -169,6 +169,10 @@ and records `projection_class` + projection identity on every receipt. The engin
 stays generic — a plain projection produces no pack block, and `engine_schema`
 moved `0.2.8 → 0.3.0` only because receipts and the manifest grew.
 
+To build a lens for **your own** task, copy
+[`examples/projections/_template/`](examples/projections/_template/) and follow
+[`docs/BUILD_A_PROJECTION_PACK.md`](docs/BUILD_A_PROJECTION_PACK.md).
+
 The pack's predeclared `prediction` block is evaluated from raw receipts into a
 `supported / failed / inconclusive` verdict:
 
@@ -193,6 +197,11 @@ what can be **chosen**, what gets **recorded**, and what gets **locked**.
 > ReachScan becomes claim-bearing when the object, sampling conditions, projection
 > lens, and prediction rule are declared before the run and then evaluated from raw
 > receipts.
+
+**Operating the instrument:** [`docs/RUN_PATH.md`](docs/RUN_PATH.md) is the
+step-by-step procedure (research question → valid run → defensible claim), and
+[`docs/CLAIM_LADDER.md`](docs/CLAIM_LADDER.md) is what each run is allowed to
+support. The figure names the dials; those two turn it into a workflow.
 
 Source: [`docs/instrument_control_surface.dot`](docs/instrument_control_surface.dot)
 (regenerate with `dot -Tsvg docs/instrument_control_surface.dot -o docs/instrument_control_surface.svg`).
