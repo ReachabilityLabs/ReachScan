@@ -1,8 +1,8 @@
-"""Tests for the v0.3.1 prediction evaluator (handoff v2.1 Phase 4).
+"""Tests for the v0.3.1 prediction evaluator.
 
 Includes the packaged receipt fixtures (supported / failed / inconclusive /
-already-collapsed / source-arm-filtered / diffuse-mode) and the verification-plan
-unit checks.
+already-collapsed / source-arm-filtered / diffuse-mode) and the unit checks for
+loss rules, test types, expected_mode, viability, and yield robustness.
 """
 from __future__ import annotations
 
@@ -63,7 +63,7 @@ def test_packaged_fixture_outcomes(case):
 
 
 # --------------------------------------------------------------------------
-# Verification-plan unit checks
+# Unit checks: loss rules, test types, expected_mode, viability, yield robustness
 # --------------------------------------------------------------------------
 def _base_rows(klass="residue_2", n=40, depth=0.9):
     return _expand([{"count": n, "depth_fraction": depth, "projection_class": klass,

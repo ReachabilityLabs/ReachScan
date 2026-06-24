@@ -1,12 +1,11 @@
 # Changelog
 
-## 0.3.1 — 2026-06-24 (prediction evaluator; handoff v2.1 Phase 4; no engine schema bump)
+## 0.3.1 — 2026-06-24 (prediction evaluator; no engine schema bump)
 
 Turns a pack's predeclared `prediction` block into a mechanical
-`supported / failed / inconclusive` verdict computed from **raw receipts** — a
-faithful port of the handoff's evaluator sketch. The morphology claim becomes
-losable instead of a post-hoc reading. Layer over the engine; `engine_schema`
-stays `0.3.0` (the evaluator reads existing receipts).
+`supported / failed / inconclusive` verdict computed from **raw receipts**. The
+morphology claim becomes losable instead of a post-hoc reading. Layer over the
+engine; `engine_schema` stays `0.3.0` (the evaluator reads existing receipts).
 
 - **`reachscan.prediction`** — `evaluate_prediction(rows, prediction, classes,
   target_class)` with three test types over the WRONG-answer field:
@@ -27,18 +26,17 @@ stays `0.3.0` (the evaluator reads existing receipts).
   pack (projection lock); `applies_to.source_arm` filters to one declared arm.
 - **Tests** — the six packaged receipt fixtures (supported / failed / two
   inconclusive / source-arm-filtered / diffuse-mode) all reproduce their declared
-  outcomes, plus the verification-plan unit checks. Tests 66 → 81.
+  outcomes, plus unit checks for loss rules, test types, `expected_mode`,
+  viability, and yield robustness. Tests 66 → 81.
 - **Docs** — `docs/PREDICTION_CONTRACT.md`; pack README + `projection.yaml` updated
   (note: editing `projection.yaml` changes the behavior-bearing pack hash, as
   intended). Demo + `MANIFEST.sha256` regenerated.
 
 ## 0.3.0 — 2026-06-24 (projection packs + receipt/manifest binding; engine_schema 0.2.8 → 0.3.0)
 
-Implements Phases 1–3 of the projection/prediction operationalization handoff
-(v2.1): the **projection pack** system and its binding into receipts and the
-manifest. (The prediction *evaluator* — Phase 4 — is intentionally NOT in this
-release; the predeclared `prediction` block is carried and hashed, not yet
-executed.)
+Adds the **projection pack** system and its binding into receipts and the
+manifest. (The prediction *evaluator* is not in this release; the predeclared
+`prediction` block is carried and hashed, not yet executed — it arrives in 0.3.1.)
 
 - **`reachscan.projection_pack`** — a projection pack is a directory
   (`projection.yaml` + `adapter.py` + `fixtures.jsonl` + README) that declares a
@@ -47,8 +45,8 @@ executed.)
     `Projection` protocol**, so `reach_scan` runs a pack with no engine changes.
   - `hash_projection_pack()` computes a **behavior-bearing** `projection_pack_hash`
     over `projection.yaml` + `adapter.py` + `fixtures.jsonl` (path + bytes) — a
-    parser/classifier edit cannot keep the same hash (spec-only hashing was the
-    failure mode v2.1 hardened against).
+    parser/classifier edit cannot keep the same hash (hashing the YAML alone would
+    silently miss parser/classifier/fixture changes).
   - `validate_fixtures()` runs labeled fixtures through the adapter and flips
     `fixtures_validated` only on a clean pass; an undeclared emitted class fails loud.
 - **Floor-sum pack** — `examples/projections/floor_sum_mod8/` (the flagship as a

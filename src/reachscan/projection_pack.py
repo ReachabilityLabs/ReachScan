@@ -12,12 +12,11 @@ the manifest:
 
 The pack is hashed over its BEHAVIOR-BEARING files (projection.yaml + adapter.py +
 fixtures.jsonl), not the YAML alone — so a parser/classifier change cannot keep
-the same hash (see pack_hash_contract). A loaded pack also satisfies the engine's
-Projection protocol (extract/project/is_target), so `reach_scan` runs a pack with
-no engine changes.
+the same hash. A loaded pack also satisfies the engine's Projection protocol
+(extract/project/is_target), so `reach_scan` runs a pack with no engine changes.
 
-This module is the v2.1 handoff's Phases 1-2. The prediction evaluator (Phase 4)
-is intentionally NOT here yet.
+The evaluator that consumes a pack's predeclared `prediction` block lives in
+`reachscan.prediction`.
 
 YAML is an optional dependency: install `reachscan[projection]`. The engine core
 stays dependency-free; only pack loading needs PyYAML.
@@ -40,7 +39,7 @@ INVALID_CLASS = "invalid"
 
 
 # --------------------------------------------------------------------------
-# Behavior-bearing pack hash (port of pack_hash_protocol.py)
+# Behavior-bearing pack hash
 # --------------------------------------------------------------------------
 @dataclass(frozen=True)
 class PackHash:
@@ -75,7 +74,7 @@ def hash_projection_pack(pack_dir: Path | str,
 
 
 # --------------------------------------------------------------------------
-# Fixture rows (port of projection_protocol.py)
+# Fixture rows
 # --------------------------------------------------------------------------
 @dataclass(frozen=True)
 class ProjectionFixture:
@@ -114,7 +113,7 @@ class ProjectionPack:
         self.target_class: str = proj["target_class"]
         self.declared_classes: tuple[str, ...] = tuple(proj.get("classes", ()))
         self.target: dict = spec.get("target", {})
-        # Predeclared prediction block (evaluated by reachscan.prediction, Phase 4).
+        # Predeclared prediction block (evaluated by reachscan.prediction).
         self.prediction: dict = spec.get("prediction", {}) or {}
         # Engine Projection.name:
         self.name = self.projection_id

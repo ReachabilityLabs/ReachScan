@@ -2,7 +2,7 @@
 
     python examples/projections/floor_sum_mod8/run_pack_demo.py --out /tmp/pack_run
 
-Demonstrates Phase 3 binding: the pack validates against its fixtures, then drives
+Demonstrates pack binding: the pack validates against its fixtures, then drives
 a scan whose run_manifest.json carries the `projection_pack` block and whose
 receipts carry `projection_class` + projection identity. The source is a MockSource,
 so this is a PIPELINE demonstration, not a scientific result.

@@ -73,7 +73,7 @@ class RolloutReceipt:
     n_new_tokens: int = 0  # generated-token count for THIS rollout (deterministic cost)
     # --- v0.3.0 projection-pack binding (None/defaults when no pack is used) ---
     projection_class: str | None = None   # the declared class (residue_4 / no_answer / invalid)
-    parsed_answer: str | None = None       # = value; the spec's parsed_answer column
+    parsed_answer: str | None = None       # = value; parsed_answer column for pack runs
     target_hit: bool = False               # outcome check (exact correct answer), distinct from is_target
     parse_status: str = "ok"               # ok | no_answer | truncated | invalid
     projection_id: str | None = None
@@ -83,7 +83,7 @@ class RolloutReceipt:
     answer_exposed_in_prefix: bool | None = None
     exposure_check_id: str | None = None
     exposure_check_status: str = "not_checked"
-    raw_completion: str = ""               # raw model text (the spec's raw_completion evidence)
+    raw_completion: str = ""               # raw model text (raw_completion evidence)
 
 
 @dataclass

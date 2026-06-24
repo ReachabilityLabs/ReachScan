@@ -6,8 +6,8 @@ as `supported`, `failed`, or `inconclusive` — *before* the run. After the run,
 `reachscan prediction evaluate` computes the verdict mechanically from the **raw
 receipts**, so morphology is a declared measurement rather than a post-hoc story.
 
-This implements Phase 4 of the v2.1 operationalization handoff. It is a layer over
-the engine: it reads receipts and a pack; it does not change the measurement.
+It is a layer over the engine: it reads receipts and a pack; it does not change
+the measurement.
 
 ## What is tested
 
@@ -20,7 +20,7 @@ from the structural class set.
 |---|---|---|
 | `family_structure` | do wrong answers concentrate into declared families, or spread like noise? | normalized entropy over structural classes vs `max_entropy`/`min_entropy`, dispatched by `expected_mode` (`concentrated` / `diffuse` / `mixed`) |
 | `morphology_mode` | capture, shatter, or mixed? | entropy ≤ `capture_max` → capture; ≥ `shatter_min` → shatter; between → mixed |
-| `family_before_atom` | did the family grain collapse before any single atom (exact answer) won? | family grain = `projection_class`, atom grain = `parsed_answer`; requires an initially viable target mass at the first usable depth |
+| `family_before_atom` | did the family grain collapse before any single atom (exact answer) won? | family grain = `projection_class`, atom grain = `parsed_answer`; masses are scored over parsed (ok) answers only, each usable depth needs `min_n_per_depth` ok answers, and the first usable depth must have a viable target mass |
 
 Run verdict (`loss_rule: any_test_failed`, the only accepted rule):
 
@@ -33,7 +33,10 @@ supported     else
 `inconclusive` is load-bearing: too few structural wrong answers (`min_n`), a
 missing depth band, a target already collapsed before the first usable depth, an
 unknown test type, or an unsupported loss rule all yield `inconclusive` — never a
-false `supported`/`failed`.
+false `supported`/`failed`. In particular, because `family_before_atom` scores
+over parsed (ok) answers and requires `min_n_per_depth` of them per depth, a depth
+where extraction failed (all `no_answer`/`invalid`) cannot read as a family
+collapse — yield failure is not morphology.
 
 ## Honesty + anti-post-hoc locks
 
@@ -63,4 +66,4 @@ outcome) in `run_manifest.json`.
 - Real answer-exposure auditing + claim levels above `morphology_demo` (the
   `bounded_scientific_measurement`+ tiers require the exposure ledger).
 - Bootstrap/permutation intervals replacing fixed entropy cutoffs (same artifact
-  shape, sharper internals) — Phase 8.
+  shape, sharper internals).

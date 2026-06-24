@@ -1,6 +1,5 @@
-"""Tests for v0.3.0 projection packs (handoff Phases 1-3): pack load + behavior-
-bearing hash + fixture validation, the engine bridge, and the receipt/manifest
-binding. The prediction evaluator (Phase 4) is not part of this build."""
+"""Tests for v0.3.0 projection packs: pack load + behavior-bearing hash + fixture
+validation, the engine bridge, and the receipt/manifest binding."""
 from __future__ import annotations
 
 import shutil
@@ -130,7 +129,7 @@ def test_bridge_handles_no_answer_and_invalid():
 
 
 # --------------------------------------------------------------------------
-# Receipt + manifest binding (Phase 3)
+# Receipt + manifest binding
 # --------------------------------------------------------------------------
 def _mock_scan(projection, **kw):
     src = MockSource(basin_value=56)

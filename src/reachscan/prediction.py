@@ -1,14 +1,14 @@
-"""Prediction evaluator (v0.3.1) — handoff v2.1 Phase 4.
+"""Prediction evaluator (v0.3.1).
 
 Turns a pack's predeclared `prediction` block into a mechanical
-`supported / failed / inconclusive` verdict computed from RAW receipts. This is a
-faithful port of the handoff's `prediction_evaluator_protocol.py`:
+`supported / failed / inconclusive` verdict computed from RAW receipts:
 
   - prediction evaluation is separate from projection validation;
   - `any_test_failed` is the only accepted loss rule (others -> inconclusive);
   - source-arm filtering is explicit;
   - `expected_mode` is live configuration (concentrated / diffuse / mixed);
-  - `family_before_atom` has an initial target-viability precondition;
+  - `family_before_atom` has an initial target-viability precondition and scores
+    over parsed (ok) answers only;
   - thin data returns `inconclusive`, never `supported`.
 
 The three test types read WRONG-answer morphology over the declared projection
@@ -263,7 +263,7 @@ TEST_REGISTRY = {
 # --------------------------------------------------------------------------
 def evaluate_prediction(receipts: Sequence[Mapping], prediction: Mapping,
                         declared_classes: Sequence[str], target_class: str) -> RunVerdict:
-    """Evaluate a prediction over raw receipt rows. Faithful to the handoff sketch."""
+    """Evaluate a prediction over raw receipt rows; return the run verdict."""
     loss_rule = str(prediction.get("loss_rule", "any_test_failed"))
     if loss_rule != "any_test_failed":
         return RunVerdict(INCONCLUSIVE, loss_rule, [TestVerdict(

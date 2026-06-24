@@ -3,7 +3,7 @@
 The first formal **projection pack**: a task-specific answer lens declared
 precisely enough that ReachScan can run, validate, and bind it into receipts and
 the manifest. It is the floor-sum flagship (correct answer 532; `532 % 8 == 4`)
-expressed as the spec's pack format.
+expressed as a projection pack.
 
 ## Files (behavior-bearing files are hashed)
 - `projection.yaml` — ids, version, target, parser/checker/classifier names, the
