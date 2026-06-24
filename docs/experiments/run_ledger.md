@@ -6,7 +6,7 @@ the trend, not just the headline number.
 
 > This ledger is an **interpretation layer, not evidence.** Every cell must be
 > recomputed from `run_manifest.json` + `receipts.csv`; if prose and raw rows ever
-disagree, the raw rows win.
+> disagree, the raw rows win.
 
 | date | run id | model | revision | GPU | pkg commit | seed | plan (depths × M) | projection | out dir | ok yield (f=0) | R_T trend (f=0 → f=1) | notes |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
