@@ -15,8 +15,12 @@ stays `0.3.0` (the evaluator reads existing receipts).
   (two-grain, with an initial target-viability precondition). `any_test_failed` is
   the only accepted loss rule; unknown rules/test types → `inconclusive`. Thin
   data, missing bands, and already-collapsed targets are `inconclusive`, never a
-  false support. Plus `evaluate_run(pack, result)`, `rows_from_result`,
-  `prediction_hash`, `write_prediction_verdict`, `update_manifest_with_verdict`.
+  false support. `family_before_atom` judges masses over **parsed (ok) answers
+  only** and needs `min_n_per_depth` ok answers per depth, so a deep depth that is
+  all `no_answer` is `inconclusive` (yield/extraction failure is not a family
+  collapse), never `supported`. Plus `evaluate_run(pack, result)`,
+  `rows_from_result`, `prediction_hash`, `write_prediction_verdict`,
+  `update_manifest_with_verdict`.
 - **CLI** `reachscan prediction evaluate <run_dir> --projection <pack_dir>` —
   writes `prediction_verdict.json` and records a `prediction` block in
   `run_manifest.json`. Refuses a run whose `projection_pack_hash` differs from the
