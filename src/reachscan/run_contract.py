@@ -170,6 +170,7 @@ class RunContract:
     rollout_sampler: SamplerPolicy = ROLLOUT_SAMPLER
     base_seed: int = BASE_SEED
     checkpointed: bool = True
+    projection_pack: str | None = None   # pack dir path OR builtin name; None -> ExactMatch
 
     @property
     def confirm_token(self) -> str:
@@ -186,8 +187,17 @@ class RunContract:
     def plan_tuples(self) -> tuple[tuple[float, int], ...]:
         return RIGOR_PRESETS[self.rigor_key].plan
 
-    def projection(self) -> ExactMatch:
-        return ExactMatch(self.answer)
+    def load_pack(self):
+        """Load the declared projection pack, or return None if this run uses none."""
+        if not self.projection_pack:
+            return None
+        from .projection_pack import load_projection_pack, resolve_pack
+        return load_projection_pack(resolve_pack(self.projection_pack))
+
+    def projection(self):
+        """The run's projection: the declared pack if set, else ExactMatch(answer)."""
+        pack = self.load_pack()
+        return pack if pack is not None else ExactMatch(self.answer)
 
     def run_card(self, *, hf_token_status: str = "not checked") -> str:
         return render_run_card(self, hf_token_status=hf_token_status)
@@ -210,6 +220,7 @@ def build_run_contract(
     device: str | None = None,
     torch_dtype: str = "auto",
     allow_unpinned: bool = False,
+    projection_pack: str | None = None,
 ) -> RunContract:
     """Build a declared run contract.
 
@@ -254,7 +265,36 @@ def build_run_contract(
         device=device,
         torch_dtype=torch_dtype,
         checkpointed=rigor.checkpointed,
+        projection_pack=projection_pack,
     )
+
+
+def _projection_card_lines(contract: "RunContract") -> list[str]:
+    """The projection block of the run card: a declared pack, or the ExactMatch
+    fallback with a loud claim-ceiling note."""
+    if not contract.projection_pack:
+        return [
+            f"  projection  : ExactMatch({contract.answer})  [NOT a declared pack]",
+            "  NOTE        : lens not declared/validated/hashed -> caps this run below",
+            "                the pack-backed rungs of the claim ladder",
+            "                (set PROJECTION_PACK; see docs/CLAIM_LADDER.md).",
+        ]
+    try:
+        from .projection_pack import validate_fixtures
+        pack = contract.load_pack()
+    except Exception as exc:  # surfaced here, hard-blocked at confirm
+        return [f"  projection  : pack {contract.projection_pack!r} FAILED TO LOAD: {exc}"]
+    errs = validate_fixtures(pack)
+    ntests = len((pack.prediction or {}).get("tests", []))
+    return [
+        f"  projection  : pack '{pack.projection_id}' v{pack.projection_version}",
+        f"  pack hash   : {pack.pack_hash.value}",
+        f"  classes     : {', '.join(pack.declared_classes)}",
+        f"  target class: {pack.target_class}",
+        f"  claim_level : {pack.claim_level}",
+        f"  fixtures    : {'PASS' if not errs else f'FAIL ({len(errs)})'}",
+        f"  prediction  : {f'present ({ntests} tests)' if ntests else 'none declared'}",
+    ]
 
 
 def render_run_card(contract: RunContract, *, hf_token_status: str = "not checked") -> str:
@@ -277,7 +317,11 @@ def render_run_card(contract: RunContract, *, hf_token_status: str = "not checke
             f"  gated model : {'yes' if contract.gated else 'no'}",
             f"  HF token    : {hf_token_status}",
             f"  task        : floor-sum (answer {contract.answer})",
-            f"  projection  : ExactMatch({contract.answer}) [primary]",
+        ]
+    )
+    lines.extend(_projection_card_lines(contract))
+    lines.extend(
+        [
             f"  rigor       : {RIGOR_PRESETS[contract.rigor_key].label}",
             f"  checkpoint  : {'yes' if contract.checkpointed else 'no'}",
             "  sampler     : T=0.7 top_p=1.0 top_k=None rep=1.0 max_new=512",
@@ -321,6 +365,20 @@ def confirm_run_contract(contract: RunContract, *, typed: str | None = None) -> 
             "model commit SHA, or set ALLOW_UNPINNED=True and record the reason "
             "in docs/experiments/run_ledger.md before interpreting results."
         )
+    # Enforce the projection-pack lens: it must load and its fixtures must pass
+    # before a claim-bearing run proceeds.
+    if contract.projection_pack:
+        from .projection_pack import validate_fixtures
+        try:
+            pack = contract.load_pack()
+        except Exception as exc:
+            raise SystemExit(f"projection pack failed to load: {exc}")
+        errs = validate_fixtures(pack)
+        if errs:
+            raise SystemExit(
+                "projection pack fixtures FAILED; fix before running:\n  - "
+                + "\n  - ".join(errs)
+            )
 
 
 def detect_hf_token_status() -> str:

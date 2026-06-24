@@ -72,3 +72,59 @@ def test_quickstart_has_no_active_model_id_default():
         ]
         assert 'MODEL_ID = "Qwen/Qwen2.5-1.5B-Instruct"' not in active_lines
         assert 'MODEL_ID = "meta-llama/Llama-3.1-8B-Instruct"' not in active_lines
+
+
+# --------------------------------------------------------------------------
+# v0.3.2 — pack-aware run contracts
+# --------------------------------------------------------------------------
+import shutil  # noqa: E402
+
+from reachscan.projection_pack import (  # noqa: E402
+    ProjectionPack,
+    builtin_pack_path,
+)
+
+REPO = Path(__file__).resolve().parents[1]
+
+
+def test_pack_backed_contract_shows_pack_fields_and_returns_pack():
+    c = build_run_contract(tier="cross_family", revision="abc123",
+                           projection_pack="floor_sum_mod8")
+    assert isinstance(c.projection(), ProjectionPack)
+    card = c.run_card()
+    assert "pack 'floor_sum_mod8'" in card
+    assert "target class: residue_4" in card
+    assert "claim_level : morphology_demo" in card
+    assert "fixtures    : PASS" in card
+    assert "prediction  : present (3 tests)" in card
+    assert "projection_pack_hash" not in card  # shows the value, not the literal key
+    assert "sha256:" in card
+
+
+def test_no_pack_contract_warns_about_claim_ceiling():
+    c = build_run_contract(tier="smoke")
+    card = c.run_card()
+    assert "NOT a declared pack" in card
+    assert "claim ladder" in card
+    from reachscan import ExactMatch
+    assert isinstance(c.projection(), ExactMatch)
+
+
+def test_confirm_blocks_on_failing_pack_fixtures(tmp_path):
+    bad = tmp_path / "pack"
+    shutil.copytree(builtin_pack_path("floor_sum_mod8"), bad)
+    (bad / "adapter.py").write_text(
+        "def parse(t): return 1\n"
+        "def is_correct(p): return False\n"
+        "def classify(p): return 'residue_0'\n")
+    c = build_run_contract(tier="smoke", projection_pack=str(bad))
+    with pytest.raises(SystemExit, match="fixtures FAILED"):
+        confirm_run_contract(c, typed=c.confirm_token)
+
+
+def test_builtin_pack_matches_example_copy():
+    # The packaged (installable) pack must not drift from the examples/ copy.
+    pkg = builtin_pack_path("floor_sum_mod8")
+    ex = REPO / "examples" / "projections" / "floor_sum_mod8"
+    for f in ("projection.yaml", "adapter.py", "fixtures.jsonl"):
+        assert (pkg / f).read_bytes() == (ex / f).read_bytes(), f"{f} drifted"

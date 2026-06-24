@@ -17,7 +17,7 @@ This is the language-model sibling of the oracle-backed random 3-SAT
 The two share a measurement grammar (committed state → reachable future); the
 substrates and guarantees differ.
 
-> Status: v0.3.1. The engine and reference components are tested. The worked example
+> Status: v0.3.2. The engine and reference components are tested. The worked example
 > reproduces the *shape* of the flagship result on a mock or a small live model; it
 > is not a release of production data.
 
@@ -26,6 +26,7 @@ substrates and guarantees differ.
 ```bash
 pip install -e .            # core, zero heavy dependencies (mock path)
 pip install -e ".[hf]"      # add a real HuggingFace model source
+pip install -e ".[projection]"  # add projection-pack support (PyYAML)
 pip install -e ".[test]"    # run the tests
 ```
 

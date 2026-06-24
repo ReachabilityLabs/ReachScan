@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.3.2 — 2026-06-24 (pack-aware run contracts; no engine schema bump)
+
+Closes the gap between the docs (which say claim-bearing runs use projection packs)
+and the notebook machinery (which still returned `ExactMatch`). The public
+operating contract changes; the measurement does not — `engine_schema` stays
+`0.3.0`.
+
+- **Run contract is projection-pack-aware.** `build_run_contract(...,
+  projection_pack=...)` accepts a pack directory path **or** a built-in pack name.
+  `contract.projection()` now returns the declared pack when set (else
+  `ExactMatch`). The run card shows the pack id/version, `projection_pack_hash`,
+  declared classes, target class, `claim_level`, fixture-validation status, and
+  whether a prediction is declared; when no pack is set it prints a loud
+  claim-ceiling note. `confirm_run_contract` **hard-blocks** if the pack fails to
+  load or its fixtures fail.
+- **Flagship pack ships as package data** — `reachscan/packs/floor_sum_mod8/` is
+  included in the wheel, so a `pip install`'d notebook (e.g. Colab) can load it via
+  `reachscan.builtin_pack_path("floor_sum_mod8")` / `load_builtin_pack(...)` /
+  `resolve_pack(...)`. A test guards it against drift from the `examples/` copy.
+- **Notebook:** new `PROJECTION_PACK` knob (passed into the contract); install line
+  now requests the `projection` extra (`reachscan[hf,plot,projection]`).
+- **New optional extra** `reachscan[projection]` (PyYAML). Tests 82 → 86.
+
 ## 0.3.1 — 2026-06-24 (prediction evaluator; no engine schema bump)
 
 Turns a pack's predeclared `prediction` block into a mechanical

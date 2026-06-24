@@ -226,6 +226,31 @@ def load_projection_pack(pack_dir: Path | str) -> ProjectionPack:
                           pack_hash=pack_hash)
 
 
+def builtin_pack_path(name: str) -> Path:
+    """Path to a projection pack shipped inside the installed reachscan package.
+
+    Works from a pip-installed wheel (e.g. in Colab), where the repo's
+    examples/ tree is not present."""
+    base = Path(__file__).resolve().parent / "packs" / name
+    if not (base / "projection.yaml").is_file():
+        avail = sorted(p.name for p in (base.parent).glob("*")
+                       if (p / "projection.yaml").is_file()) if base.parent.is_dir() else []
+        raise FileNotFoundError(f"no builtin pack {name!r}; available: {avail}")
+    return base
+
+
+def resolve_pack(pack: str | Path) -> Path:
+    """Accept a pack directory path OR a builtin pack name; return the directory."""
+    p = Path(pack)
+    if (p / "projection.yaml").is_file():
+        return p
+    return builtin_pack_path(str(pack))
+
+
+def load_builtin_pack(name: str) -> ProjectionPack:
+    return load_projection_pack(builtin_pack_path(name))
+
+
 def load_fixtures(pack_dir: Path | str) -> list[ProjectionFixture]:
     path = Path(pack_dir) / "fixtures.jsonl"
     if not path.is_file():
