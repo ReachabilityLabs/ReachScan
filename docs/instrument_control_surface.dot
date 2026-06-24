@@ -1,0 +1,102 @@
+digraph reachscan_control_surface {
+  rankdir=TB;
+  bgcolor="white";
+  labelloc="t";
+  fontname="Helvetica";
+  fontsize=19;
+  label=<<b>ReachScan Control Surface: What Can Be Chosen, What Gets Recorded, What Gets Locked</b><br/><font point-size="11"><i>ReachScan becomes claim-bearing when the object, sampling conditions, projection lens, and prediction rule are<br/>declared before the run and then evaluated from raw receipts.</i></font><br/><font point-size="9"> </font>>;
+  node [fontname="Helvetica", shape=box, style="rounded,filled", penwidth=1.6, margin="0.18,0.12"];
+  edge [fontname="Helvetica", color="#555555", penwidth=1.4, arrowsize=0.9];
+
+  // ===== main signal chain =====
+  S1 [fillcolor="#F6DFC9", color="#B87333", label=<
+<b>&#9312; SUBSTRATE</b> &nbsp; <font color="#8a5a25">what am I measuring?</font> &nbsp; <font color="#1f6feb"><b>[declared &amp; recorded]</b></font><br align="left"/>
+<font point-size="10"> </font><br align="left"/>
+<font point-size="10">• source : model_id · revision (pin) · device/dtype</font><br align="left"/>
+<font point-size="10">• prefix : prompt · trace seed (single frozen trace)</font><br align="left"/>
+<font point-size="10">• source_arm : a <i>label</i> — the contrast must be built by the run design</font><br align="left"/>
+>];
+
+  S2 [fillcolor="#CFEDE8", color="#0D9B8A", label=<
+<b>&#9313; COMMITMENT GEOMETRY</b> &nbsp; <font color="#0a6f63">where do I probe?</font> &nbsp; <font color="#1f6feb"><b>[declared &amp; recorded]</b></font><br align="left"/>
+<font point-size="10"> </font><br align="left"/>
+<font point-size="10">• plan : depth fraction f · rollouts M · committed_len override</font><br align="left"/>
+<font point-size="10">• M = finite-sample <i>resolution</i> (tightens CIs; gates &#8216;inconclusive&#8217;)</font><br align="left"/>
+<font point-size="10">• include_prompt_only</font><br align="left"/>
+<font point-size="10">• run_depth_indices &nbsp;<font color="#888888">(execution / resume — not a scientific knob)</font></font><br align="left"/>
+>];
+
+  S3 [fillcolor="#CFEDE8", color="#0D9B8A", label=<
+<b>&#9314; DECODING</b> &nbsp; <font color="#0a6f63">how do I sample futures?</font> &nbsp; <font color="#1f6feb"><b>[declared &amp; recorded]</b></font><br align="left"/>
+<font point-size="10"> </font><br align="left"/>
+<font point-size="10">• trace_sampler / rollout_sampler :</font><br align="left"/>
+<font point-size="10">&nbsp;&nbsp;&nbsp;temperature · top_p · top_k · rep_penalty · max_new_tokens</font><br align="left"/>
+<font point-size="10">• base_seed (collision-free seed rule) · stop_token_ids</font><br align="left"/>
+>];
+
+  S4 [fillcolor="#F6DFC9", color="#B87333", penwidth=3.2, label=<
+<b>&#9315; PROJECTION / LENS</b> &nbsp; <font color="#8a5a25">how do I read each answer?</font> &nbsp; <font color="#b00020"><b>[LOCKED BY HASH]</b></font><br align="left"/>
+<font point-size="10"> </font><br align="left"/>
+<font point-size="10">• extract &#8594; project &#8594; is_target</font><br align="left"/>
+<font point-size="10">• pack : declared classes · target_class · outcome_checker</font><br align="left"/>
+<font point-size="10">• fixtures · projection_pack_hash (behavior-bearing)</font><br align="left"/>
+>];
+
+  ART [fillcolor="#FFF3C4", color="#C9A227", label=<
+<b>ARTIFACTS &amp; READOUTS</b> &nbsp; <font color="#8a6d12">the raw evidence (dials you read)</font> &nbsp; <font color="#888888"><b>[output]</b></font><br align="left"/>
+<font point-size="10"> </font><br align="left"/>
+<font point-size="10">• receipts.csv · summary_by_depth.csv · run_manifest.json</font><br align="left"/>
+<font point-size="10">• R_T(f) · dominant basin + mass · answer-field entropy</font><br align="left"/>
+<font point-size="10">• yield / cap-hits · Wilson intervals · class-mass-by-depth · cost</font><br align="left"/>
+>];
+
+  S5 [fillcolor="#E3DEF7", color="#6A5ACD", penwidth=3.2, label=<
+<b>&#9316; PREDICTION / CLAIM</b> &nbsp; <font color="#473b9e">what would count as support?</font> &nbsp; <font color="#b00020"><b>[LOCKED BY HASH]</b></font><br align="left"/>
+<font point-size="10"> </font><br align="left"/>
+<font point-size="10">• loss_rule · applies_to.source_arm</font><br align="left"/>
+<font point-size="10">• tests : family_structure · morphology_mode · family_before_atom</font><br align="left"/>
+<font point-size="10">• thresholds : entropy · min_n · depth_band</font><br align="left"/>
+<font point-size="10">• prediction_hash (and inside projection_pack_hash when embedded)</font><br align="left"/>
+>];
+
+  VER [shape=box, style="filled", fillcolor="#DCEBD6", color="#4C9A2A", penwidth=2, label=<
+<b>VERDICT</b> &nbsp; supported &nbsp;/&nbsp; failed &nbsp;/&nbsp; inconclusive &nbsp; <font color="#888888"><b>[output]</b></font><br align="left"/>
+<font point-size="9.5">a declared READ of the data, not the data — computed from raw receipts;</font><br align="left"/>
+<font point-size="9.5">thin / zero evidence &#8594; inconclusive</font><br align="left"/>
+>];
+
+  S1 -> S2 -> S3 -> S4 -> ART -> S5 -> VER;
+
+  // ===== governance rails: govern the WHOLE chain =====
+  RAILS [fillcolor="#ECECEC", color="#777777", style="rounded,filled,dashed", label=<
+<b>&#9317; GOVERNANCE RAILS</b><br align="left"/>
+<font color="#555555">what am I allowed to claim? (gates, not tuners)</font><br align="left"/>
+<font point-size="10"> </font><br align="left"/>
+<font point-size="10">• run-contract tier · rigor · revision pin</font><br align="left"/>
+<font point-size="10">• claim ceiling · confirmation token</font><br align="left"/>
+<font point-size="10">• claim_level + exposure policy</font><br align="left"/>
+<font point-size="10">• locks: projection lock · consistency rule ·</font><br align="left"/>
+<font point-size="10">&nbsp;&nbsp;fixtures gate · inconclusive-dominance</font><br align="left"/>
+<font point-size="9" color="#666666"><i>governs the whole chain: object, sampling, lens, interpretation</i></font><br align="left"/>
+>];
+
+  { rank=same; S3; RAILS; }
+  edge [style=dashed, color="#bdbdbd", penwidth=1.0, arrowsize=0.6, constraint=false];
+  RAILS -> S1;
+  RAILS -> S2;
+  RAILS -> S3 [label=<<font point-size="9" color="#888888">governs</font>>];
+  RAILS -> S4;
+  RAILS -> S5;
+
+  // ===== legend =====
+  LEGEND [shape=box, color="#bbbbbb", fillcolor="#fbfbfb", style="rounded,filled", fontsize=10, label=<
+<b>Knob state</b><br align="left"/>
+<font color="#1f6feb"><b>[declared &amp; recorded]</b></font> chosen freely; written into the manifest / receipts (model, revision, plan, sampler, arm)<br align="left"/>
+<font color="#b00020"><b>[LOCKED BY HASH]</b></font> frozen once declared; turning it changes the hash — no post-hoc fudging<br align="left"/>
+<font color="#888888"><b>[output]</b></font> read, not set (artifacts &amp; verdict)<br align="left"/>
+<font point-size="9"> </font><br align="left"/>
+<b>Tier of consequence (box color)</b><br align="left"/>
+<font color="#B87333">&#9632;</font> Tier 1 define the object &nbsp; <font color="#0D9B8A">&#9632;</font> Tier 2 shape the measurement &nbsp; <font color="#6A5ACD">&#9632;</font> Tier 3 interpret &nbsp; <font color="#777777">&#9632;</font> Tier 0 rails<br align="left"/>
+>];
+  VER -> LEGEND [style=invis, constraint=true];
+}

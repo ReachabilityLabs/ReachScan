@@ -181,6 +181,22 @@ shatter, family-before-atom); thin/zero evidence is `inconclusive`, never a fals
 support; and the evaluator refuses a run that used a different pack (it checks the
 `projection_pack_hash`). See [`docs/PREDICTION_CONTRACT.md`](docs/PREDICTION_CONTRACT.md).
 
+## Control surface
+
+ReachScan is not one metric — it is an instrument with object-defining knobs,
+measurement knobs, a reading lens, and claim gates. The figure below is the whole
+control surface as a signal chain (substrate → probe → sample → read → judge):
+what can be **chosen**, what gets **recorded**, and what gets **locked**.
+
+![ReachScan control surface](docs/instrument_control_surface.svg)
+
+> ReachScan becomes claim-bearing when the object, sampling conditions, projection
+> lens, and prediction rule are declared before the run and then evaluated from raw
+> receipts.
+
+Source: [`docs/instrument_control_surface.dot`](docs/instrument_control_surface.dot)
+(regenerate with `dot -Tsvg docs/instrument_control_surface.dot -o docs/instrument_control_surface.svg`).
+
 ## Repo layout
 
 ```text
