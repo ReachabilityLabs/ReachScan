@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.3.4 — 2026-06-24 (CLI built-in pack names + stale-doc fixes; no engine schema bump)
+
+- **The `reachscan` CLI now accepts a built-in pack *name*** (not only a directory
+  path): `reachscan projection validate floor_sum_mod8`,
+  `reachscan projection inspect floor_sum_exact`, and
+  `reachscan prediction evaluate <run> --projection floor_sum_mod8` all resolve
+  built-in packs via `resolve_pack`, matching how the notebook already worked.
+- **Stale version strings fixed:** the README "reusable software is v0.2.7" line
+  and `docs/PRODUCT_ARCHITECTURE.md` (`reachscan v0.3.1` + the per-version DOI line)
+  now reflect the current 0.3.x line.
+- No engine/measurement change (`engine_schema` stays `0.3.0`). Tests 88 → 89;
+  demo + `MANIFEST.sha256` regenerated.
+
 ## 0.3.3 — 2026-06-24 (second built-in floor-sum lens; no engine schema bump)
 
 - **New built-in pack `floor_sum_exact`** — a companion / sanity lens whose target

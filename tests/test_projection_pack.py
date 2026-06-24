@@ -214,3 +214,10 @@ def test_floor_sum_exact_is_exact_not_fiber():
     a540 = pack.extract("The answer is \\boxed{540}.")   # in residue_4, but NOT 532
     assert pack.project(a532) == "target" and pack.is_target(a532) is True
     assert pack.project(a540) == "other" and pack.is_target(a540) is False
+
+
+def test_cli_accepts_builtin_pack_names():
+    from reachscan.tools.cli import main
+    assert main(["projection", "validate", "floor_sum_mod8"]) == 0
+    assert main(["projection", "validate", "floor_sum_exact"]) == 0
+    assert main(["projection", "inspect", "floor_sum_mod8"]) == 0

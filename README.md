@@ -17,7 +17,7 @@ This is the language-model sibling of the oracle-backed random 3-SAT
 The two share a measurement grammar (committed state → reachable future); the
 substrates and guarantees differ.
 
-> Status: v0.3.3. The engine and reference components are tested. The worked example
+> Status: v0.3.4. The engine and reference components are tested. The worked example
 > reproduces the *shape* of the flagship result on a mock or a small live model; it
 > is not a release of production data.
 
@@ -338,4 +338,4 @@ requested per the NOTICE, not restricted beyond Apache-2.0.
 
 This software is one component of the *Existence Is Not Reachability* publication family. The concise paper states the central scientific result; the Full Technical Report contains the complete argument and audit record; the Evidence and Reproducibility Archive contains the canonical evidence and constructors. See `docs/PRODUCT_ARCHITECTURE.md` and `release_assets/release_manifest.json`.
 
-Archive v1.0-RC2 includes complete per-rollout R006 repaired-path evidence. The reusable software is v0.2.7: a backward-compatible hardening line on the v0.2.x core (see `CHANGELOG.md`); every prior caller still works.
+Archive v1.0-RC2 includes complete per-rollout R006 repaired-path evidence. The reusable software is v0.3.x: the v0.2.x measurement core plus the projection-pack, prediction-contract, and run-contract layers (see `CHANGELOG.md`); earlier callers still work.

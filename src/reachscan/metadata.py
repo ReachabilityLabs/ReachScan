@@ -12,8 +12,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict
 
-FRAMEWORK_NAME = "Reachability Labs reachscan v0.3.3"
-FRAMEWORK_TAG = "Nothem Reachability / reach-scan instrument v0.3.3"
+FRAMEWORK_NAME = "Reachability Labs reachscan v0.3.4"
+FRAMEWORK_TAG = "Nothem Reachability / reach-scan instrument v0.3.4"
 CITATION_TEXT = (
     "If you use this instrument or the reach-scan measurement framing, please cite "
     "M.R. Nothem (2026), Reachability Labs, and the associated paper."

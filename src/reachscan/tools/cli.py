@@ -1,10 +1,11 @@
 """reachscan CLI group (v0.3.x).
 
-Subcommands for projection packs and prediction verdicts.
+Subcommands for projection packs and prediction verdicts. The pack argument
+accepts a directory path OR a built-in pack name (e.g. floor_sum_mod8).
 
-    reachscan projection validate examples/projections/floor_sum_mod8
+    reachscan projection validate floor_sum_mod8
     reachscan projection inspect  examples/projections/floor_sum_mod8
-    reachscan prediction evaluate <run_dir> --projection examples/projections/floor_sum_mod8
+    reachscan prediction evaluate <run_dir> --projection floor_sum_mod8
 """
 from __future__ import annotations
 
@@ -13,9 +14,9 @@ import sys
 
 
 def _projection_validate(pack_dir: str) -> int:
-    from reachscan.projection_pack import load_projection_pack, validate_fixtures
+    from reachscan.projection_pack import load_projection_pack, resolve_pack, validate_fixtures
 
-    pack = load_projection_pack(pack_dir)
+    pack = load_projection_pack(resolve_pack(pack_dir))
     errors = validate_fixtures(pack)
     print(f"projection_id      : {pack.projection_id} v{pack.projection_version}")
     print(f"projection_pack_hash: {pack.pack_hash.value}")
@@ -34,9 +35,9 @@ def _projection_validate(pack_dir: str) -> int:
 def _projection_inspect(pack_dir: str) -> int:
     import json
 
-    from reachscan.projection_pack import load_projection_pack
+    from reachscan.projection_pack import load_projection_pack, resolve_pack
 
-    pack = load_projection_pack(pack_dir)
+    pack = load_projection_pack(resolve_pack(pack_dir))
     print(json.dumps(pack.pack_meta, indent=2))
     return 0
 
@@ -48,9 +49,9 @@ def _prediction_evaluate(pack_dir: str, run_dir: str, out: str | None) -> int:
         update_manifest_with_verdict,
         write_prediction_verdict,
     )
-    from reachscan.projection_pack import load_projection_pack
+    from reachscan.projection_pack import load_projection_pack, resolve_pack
 
-    pack = load_projection_pack(pack_dir)
+    pack = load_projection_pack(resolve_pack(pack_dir))
     if not pack.prediction:
         print(f"[prediction] pack {pack.projection_id} has no prediction block",
               file=sys.stderr)
@@ -96,15 +97,16 @@ def main(argv=None) -> int:
     proj = sub.add_parser("projection", help="projection-pack commands")
     proj_sub = proj.add_subparsers(dest="action", required=True)
     v = proj_sub.add_parser("validate", help="validate a projection pack against its fixtures")
-    v.add_argument("pack_dir")
+    v.add_argument("pack_dir", help="pack directory path or built-in name (e.g. floor_sum_mod8)")
     ins = proj_sub.add_parser("inspect", help="print a projection pack's manifest block")
-    ins.add_argument("pack_dir")
+    ins.add_argument("pack_dir", help="pack directory path or built-in name")
 
     pred = sub.add_parser("prediction", help="prediction-contract commands")
     pred_sub = pred.add_subparsers(dest="action", required=True)
     ev = pred_sub.add_parser("evaluate", help="evaluate a pack's prediction against a run")
     ev.add_argument("run_dir")
-    ev.add_argument("--projection", required=True, help="projection pack directory")
+    ev.add_argument("--projection", required=True,
+                    help="projection pack directory path or built-in name")
     ev.add_argument("--out", default=None, help="where to write the verdict (default: run_dir)")
 
     args = ap.parse_args(argv)
