@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.3.5 — 2026-06-24 (public-facing cleanup; citable release; no engine schema bump)
+
+- **Removed pre-publication scaffolding** so the tree reads as a published artifact:
+  deleted the root `REPO_INTEGRATION.md` "first push / unpack into the public repo"
+  handoff file, and cleaned the quickstart install cell of its "once pushed /
+  not-yet-public / upload the v0_2 zip" comments (replaced with a pin-a-release-tag
+  hint for reproducible runs).
+- **Cut as the first citable, archive-anchored release.** This is the version
+  intended for a Zenodo software deposit (version DOI under concept
+  `10.5281/zenodo.20808922`) and for the matching reference in the Core Research
+  Article — so the DOI'd, paper-cited tree is the cleaned one.
+- No engine/measurement change (`engine_schema` stays `0.3.0`); demo +
+  `MANIFEST.sha256` regenerated.
+
 ## 0.3.4 — 2026-06-24 (CLI built-in pack names + stale-doc fixes; no engine schema bump)
 
 - **The `reachscan` CLI now accepts a built-in pack *name*** (not only a directory

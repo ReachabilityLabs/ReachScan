@@ -1,5 +1,5 @@
 """reachscan — measure the future field of a committed reasoning prefix."""
-__version__ = "0.3.4"
+__version__ = "0.3.5"
 
 from .contracts import (
     ExtractedAnswer,
