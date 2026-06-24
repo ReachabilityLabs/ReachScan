@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "reachscan"
-version = "0.2.6"
+version = "0.2.7"
 description = "Measure the future field of a committed reasoning prefix: target reachability, basin structure, and foreclosure under commitment."
 readme = "README.md"
 license = {text = "Apache-2.0"}

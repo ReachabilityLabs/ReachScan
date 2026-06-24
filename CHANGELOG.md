@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.2.7 — 2026-06-23 (run-contract gate; no schema bump)
+
+**Run control / notebook safety**
+- Added `reachscan.run_contract`, a lightweight notebook helper that forces an
+  explicit run tier before any HuggingFace model loads. The quickstart now starts
+  from `TIER = None` and hard-stops until the user selects `smoke`,
+  `paper_family`, `cross_family`, or `custom`.
+- The run card prints the model id, revision, gated-model status, task,
+  projection, sampler, depth plan, artifact directory, claim ceiling, and a
+  model-specific confirmation token. This prevents the smoke model
+  (`Qwen/Qwen2.5-1.5B-Instruct`) from silently becoming the intended Llama run
+  (`meta-llama/Llama-3.1-8B-Instruct`).
+- Real tiers require a Hugging Face revision pin unless `ALLOW_UNPINNED=True` is
+  set deliberately. The floor-sum prompt now stays centralized in the contract
+  helper and preserves the `\boxed{}` answer-format instruction needed for the
+  extractor/yield check.
+- Added `docs/CHOOSE_YOUR_RUN.md` as the repo front door for choosing a tier,
+  rigor preset, and claim ceiling. Updated the open-weights floor-sum example
+  and Llama predeclaration to point at the contract cell instead of manually
+  editing `MODEL_ID`.
+
+**Versioning**
+- Package/provenance version bumped 0.2.6 → 0.2.7. `engine_schema` remains
+  `0.2.4` because the CSV/manifest measurement schema and engine math are
+  unchanged.
+
 ## 0.2.6 — 2026-06-23 (checkpointed Colab runs; diagnostics; no schema bump)
 
 **Run control / Colab survivability**

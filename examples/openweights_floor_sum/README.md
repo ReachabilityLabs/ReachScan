@@ -14,8 +14,10 @@ Locked design: [`docs/experiments/llama31_floor_sum_predeclared.md`](../../docs/
 ## How to produce it
 1. Open [`notebooks/reachscan_quickstart.ipynb`](../../notebooks/reachscan_quickstart.ipynb)
    in Colab (GPU runtime).
-2. Set `MODEL_ID = "meta-llama/Llama-3.1-8B-Instruct"`, pin `REVISION`, log in to HF.
-3. Run the smoke cell, the **format/yield sanity check**, then the full scan.
+2. In the run-contract cell, set `TIER = "cross_family"`, pin `REVISION`, log
+   in to Hugging Face, and confirm the model-specific token printed on the run
+   card.
+3. Run the format/yield sanity check, then the checkpointed full scan.
 4. Download the run's artifacts into `artifacts/` here.
 5. Derive the mod-8 family view from the *same* receipts (no model rerun):
    `python reproject_mod8.py artifacts/receipts.csv`.

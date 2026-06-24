@@ -30,8 +30,11 @@ collapse / shifted / diffuse / robust / different wrong basin).
   repetition_penalty 1.0, `max_new_tokens=512`. `base_seed=0`.
 - **Depth plan (fraction × M):** 0.00×128, 0.25×64, 0.50×64, 0.75×128,
   0.90×128, 1.00×128.
-- **Run path:** `notebooks/reachscan_quickstart.ipynb` (uses `ExactMatch(532)`).
-  Do **not** use bare `reachscan-demo` — it defaults to the mod-8 projection.
+- **Run path:** `notebooks/reachscan_quickstart.ipynb`, with
+  `TIER = "cross_family"` in the run-contract cell (uses `ExactMatch(532)`).
+  Do **not** use bare `reachscan-demo` -- it defaults to the mod-8 projection.
+  Do **not** manually edit a hidden `MODEL_ID`; the notebook should fail until
+  the tier, revision, and confirmation token agree.
 
 ## Predeclared reading rules
 1. **Check answer yield first.** If `ok_answers` at the prompt-only state is low
