@@ -195,3 +195,22 @@ def test_missing_files_fail_loud(tmp_path):
         load_projection_pack(tmp_path)  # empty dir: no projection.yaml
     with pytest.raises(FileNotFoundError):
         load_fixtures(tmp_path)
+
+
+# --------------------------------------------------------------------------
+# Built-in packs (shipped as package data)
+# --------------------------------------------------------------------------
+def test_builtin_packs_load_and_validate():
+    from reachscan.projection_pack import builtin_pack_path, load_builtin_pack
+    for name in ("floor_sum_mod8", "floor_sum_exact"):
+        assert (builtin_pack_path(name) / "projection.yaml").is_file()
+        assert validate_fixtures(load_builtin_pack(name)) == []
+
+
+def test_floor_sum_exact_is_exact_not_fiber():
+    from reachscan.projection_pack import load_builtin_pack
+    pack = load_builtin_pack("floor_sum_exact")
+    a532 = pack.extract("The answer is \\boxed{532}.")
+    a540 = pack.extract("The answer is \\boxed{540}.")   # in residue_4, but NOT 532
+    assert pack.project(a532) == "target" and pack.is_target(a532) is True
+    assert pack.project(a540) == "other" and pack.is_target(a540) is False

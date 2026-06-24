@@ -17,7 +17,7 @@ This is the language-model sibling of the oracle-backed random 3-SAT
 The two share a measurement grammar (committed state → reachable future); the
 substrates and guarantees differ.
 
-> Status: v0.3.2. The engine and reference components are tested. The worked example
+> Status: v0.3.3. The engine and reference components are tested. The worked example
 > reproduces the *shape* of the flagship result on a mock or a small live model; it
 > is not a release of production data.
 
@@ -169,6 +169,11 @@ declared classes, claim level, fixture-validation result) into `run_manifest.jso
 and records `projection_class` + projection identity on every receipt. The engine
 stays generic — a plain projection produces no pack block, and `engine_schema`
 moved `0.2.8 → 0.3.0` only because receipts and the manifest grew.
+
+Two floor-sum packs ship **built in** (resolvable by name from a pip install via
+`reachscan.builtin_pack_path(...)`): `floor_sum_mod8` — the morphology lens
+(target = residue-4 fiber), the claim-bearing default; and `floor_sum_exact` — a
+companion sanity lens (target = exactly 532), exact-answer reachability.
 
 To build a lens for **your own** task, copy
 [`examples/projections/_template/`](examples/projections/_template/) and follow

@@ -1,0 +1,52 @@
+projection_id: floor_sum_exact
+projection_version: 0.1.0
+task_family: arithmetic.floor_sum
+answer_space_type: integer
+claim_level: pipeline_validation   # companion / sanity lens — not the main claim-bearing lens
+
+hash:
+  algorithm: sha256
+  id: projection_pack_hash
+  scope:
+    - projection.yaml
+    - adapter.py
+    - fixtures.jsonl
+
+target:
+  type: exact
+  value: 532
+
+parser:
+  name: boxed_or_final_integer
+  function: parse
+
+outcome_checker:
+  name: exact_match
+  function: is_correct
+  acceptable_answers:
+    - 532
+
+projection:
+  name: exact_target
+  function: classify
+  target_class: target
+  classes:
+    - target
+    - other
+    - no_answer
+    - invalid
+
+# No prediction block: the exact lens has a single non-target class ("other"), so
+# wrong-answer morphology (family_structure / morphology_mode / family_before_atom)
+# is not meaningful here. Use floor_sum_mod8 for morphology claims.
+
+controls:
+  requires_predeclared_classes: true
+  exposure_policy:
+    smoke: optional
+    pipeline_validation: optional
+    morphology_demo: recommended
+    bounded_scientific_measurement: required
+    cross_model_measurement: required
+    cross_task_measurement: required
+    generality_claim: required

@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.3.3 — 2026-06-24 (second built-in floor-sum lens; no engine schema bump)
+
+- **New built-in pack `floor_sum_exact`** — a companion / sanity lens whose target
+  class is *exactly* 532 (so target reachability is exact-answer reachability). It
+  has a single non-target class and therefore **no prediction block**: wrong-answer
+  morphology needs the residue families of `floor_sum_mod8`. `claim_level:
+  pipeline_validation` marks it as a cross-check, not the main claim-bearing lens.
+- **`floor_sum_mod8` is the declared primary lens** for morphology runs. The
+  quickstart notebook now defaults `PROJECTION_PACK = "floor_sum_mod8"`; the
+  Llama-3.1 cross-family predeclaration is updated to make the residue-4 *fiber*
+  the primary claim-bearing object (`R_T` = fiber mass; exact 532 recorded as
+  `target_hit`) with `floor_sum_exact` as the companion sanity lens.
+- README lists both built-in packs. Tests 86 → 88. No engine/measurement change
+  (`engine_schema` stays `0.3.0`); demo + `MANIFEST.sha256` regenerated.
+
 ## 0.3.2 — 2026-06-24 (pack-aware run contracts; no engine schema bump)
 
 Closes the gap between the docs (which say claim-bearing runs use projection packs)

@@ -1,0 +1,5 @@
+{"raw_text": "The final answer is \\boxed{532}.", "parsed_answer": 532, "target_hit": true, "projection_class": "target"}
+{"raw_text": "Therefore the answer is 914.", "parsed_answer": 914, "target_hit": false, "projection_class": "other"}
+{"raw_text": "After simplifying I get \\boxed{540}.", "parsed_answer": 540, "target_hit": false, "projection_class": "other"}
+{"raw_text": "I cannot determine the value from the given work.", "parsed_answer": null, "target_hit": false, "projection_class": "no_answer"}
+{"raw_text": "The ratio is \\boxed{5/8}.", "parsed_answer": "5/8", "target_hit": false, "projection_class": "invalid"}

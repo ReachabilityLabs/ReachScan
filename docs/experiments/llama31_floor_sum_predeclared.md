@@ -20,9 +20,14 @@ collapse / shifted / diffuse / robust / different wrong basin).
 - **Smoke model (pipeline check):** `Qwen/Qwen2.5-1.5B-Instruct` (ungated).
 - **Task:** floor-sum — "Compute the sum of floor((3n+7)/5) for n = 1..40";
   correct answer **532**.
-- **Primary projection:** `ExactMatch(532)`.
-- **Secondary (post-hoc, same receipts):** `ModuloProjection(8, target_residue=4)`
-  via `examples/openweights_floor_sum/reproject_mod8.py` — no model rerun.
+- **Primary projection (the claim-bearing lens):** the `floor_sum_mod8` projection
+  pack (built-in), target class `residue_4`. The purpose of this run is
+  **morphology**, so target reachability `R_T(f)` is mass on the residue-4 *fiber*;
+  the exact answer 532 is recorded per-receipt as `target_hit`. The pack is
+  fixture-validated and its `projection_pack_hash` is recorded in the manifest.
+- **Companion / sanity lens (same receipts, post-hoc):** the `floor_sum_exact`
+  pack (built-in), target class `target` = exactly 532. This reports exact-answer
+  reachability as a cross-check; it is **not** the main claim-bearing lens.
 - **Prefix source:** `GeneratedPrefixSource` (Llama's *own* generated trace),
   trace seed 0, trace `max_new_tokens=2048`. NB: this is "same task, each model on
   its own native trace" — **not** "same committed prefix."
@@ -31,10 +36,11 @@ collapse / shifted / diffuse / robust / different wrong basin).
 - **Depth plan (fraction × M):** 0.00×128, 0.25×64, 0.50×64, 0.75×128,
   0.90×128, 1.00×128.
 - **Run path:** `notebooks/reachscan_quickstart.ipynb`, with
-  `TIER = "cross_family"` in the run-contract cell (uses `ExactMatch(532)`).
-  Do **not** use bare `reachscan-demo` -- it defaults to the mod-8 projection.
+  `TIER = "cross_family"` and `PROJECTION_PACK = "floor_sum_mod8"` in the
+  run-contract cell. The run card must show the pack id, `projection_pack_hash`,
+  `target class: residue_4`, and `fixtures: PASS` before you confirm.
   Do **not** manually edit a hidden `MODEL_ID`; the notebook should fail until
-  the tier, revision, and confirmation token agree.
+  the tier, revision, pack fixtures, and confirmation token all agree.
 
 ## Predeclared reading rules
 1. **Check answer yield first.** If `ok_answers` at the prompt-only state is low
