@@ -1,8 +1,8 @@
-# MCP server — PLANNED (not built)
+# MCP layer (planned)
 
-This is a **placeholder** for the cross-agent tool layer, deferred by design (the
-last rung). The instruction layer above — `AGENTS.md` + native skills/rules —
-tells an agent *how to behave*. MCP would give it **callable buttons**, usable by
+**MCP support is not implemented yet; this document records the intended
+interface.** The instruction layer (`AGENTS.md` + native skills/rules) tells an
+agent *how to behave*. An MCP server would add **callable tools**, usable by
 Claude, Codex, Cursor-style agents, and any MCP-aware tool-calling system.
 
 ## Planned tools
@@ -12,12 +12,12 @@ Claude, Codex, Cursor-style agents, and any MCP-aware tool-calling system.
 - `audit_manifest(run_dir)` — verify provenance and `MANIFEST.sha256`.
 - `write_reproduction_note(run_dir)` — emit a manifest-backed note.
 
-## Why this is the strong (but last) rung
+## Why a tool boundary helps
 Every reachscan artifact is already **provenance-stamped** (source, sampler,
-seeds, mock-vs-real). So each tool returns self-caveating output — the honesty
-contract is enforced at the **tool boundary**, not just the instruction layer.
+seeds, mock-vs-real), so each tool would return self-caveating output — the honesty
+contract enforced at the **tool boundary**, not only the instruction layer.
 
-## Why it's deferred
-MCP is the most work and should follow evidence that the instruction layer is
-useful. Build order: open-weights reproducible example → `AGENTS.md` → native
-skills/rules → (only then) this server.
+## Roadmap
+MCP is the most involved layer and is intended to follow evidence that the
+instruction layer is useful: a reproducible open-weights example, then `AGENTS.md`,
+then the native skills/rules, then this server.
