@@ -116,13 +116,14 @@ reports, per depth:
 - **dominant basin** and its mass — where the field concentrates
 - **answer-field entropy** — a target-*neutral* dispersion statistic (distinct from
   target reachability, which is target-*relative*)
-- **answer yield / truncation / cap-hits** — the denominator audit (`hit_token_cap` flags every generation that filled `max_new_tokens`). Reported as `ok_answers`; the legacy `numeric` column is kept as an alias in v0.2.x and means `status == "ok"` extracted answers, not necessarily numeric values.
+- **answer yield / truncation / cap-hits** — the denominator audit (`hit_token_cap` flags every generation that filled `max_new_tokens`). Reported as `ok_answers`; the legacy `numeric` column is kept as an alias through v0.3.x and means `status == "ok"` extracted answers, not necessarily numeric values.
 - **Wilson intervals** on the rates
 
 ### Raw field vs projected field (read this once)
 
-The measurement object is the **full terminal-answer distribution**. Everything else is
-a *view* of it. The repo keeps these distinct, and so should you:
+The measurement object is the **full terminal-answer distribution** (the paper's *full
+answer tally*). Everything else is a *view* — a pushforward / coarse-graining — of it.
+The repo keeps these distinct, and so should you:
 
 - **raw answer field** — the distribution over actual extracted answers, reconstructable
   from `parsed_answer` / `value` in the per-rollout **receipts**.
@@ -186,10 +187,11 @@ small contracts; everything specific lives in implementations of them:
 To measure **your** model on **your** task, you implement a source and/or a
 projection. You never touch the engine.
 
-`TokenContinuationSource` is the first implementation of an abstract
-"committed prefix → sampled futures" shape. The engine depends on that shape, not
-on tokens as such; other substrates could be measured by implementing the same
-shape. None is provided or claimed here.
+`TokenContinuationSource` is the **repo's** concrete implementation of an abstract
+"committed prefix → sampled futures" shape — the underlying resampling operation is
+shared with prior work (see [Related work](#related-work)). The engine depends on that
+shape, not on tokens as such; other substrates could be measured by implementing the
+same shape, though none is provided here.
 
 The shipped real-model source measures an **autoregressive, token-emitting model
 you have token-level access to** — a local open-weights model (the typical
@@ -372,7 +374,7 @@ own sources, and that apparatus is not included here.
   token IDs only, so the source-flagged `truncated` status requires a finish-reason-capable
   source. The engine independently flags `hit_token_cap` (generation length reached
   `max_new_tokens`) on every receipt and counts it per depth — the honest budget audit
-  available without one. Finish reasons will arrive in v0.3 as an *optional* source
+  available without one. Finish reasons are planned for a future release as an *optional* source
   capability, never as a change to the required contract surface.
 
 ## Related work
@@ -380,16 +382,19 @@ own sources, and that apparatus is not included here.
 `reachscan` builds directly on prefix-resampling and tokenwise outcome-distribution
 work — Forking Paths and token-level "road not taken" uncertainty study alternate
 futures from a state; Thought Anchors and Thought Branches resample around reasoning
-steps to attribute final-answer effects; failure-prefix / recoverability work
-(ELPO, Deep Dense Exploration, failure-prefix conditioning) reduces a prefix to a
-success *scalar*. `reachscan` retains the **full answer field** instead of a scalar,
+steps to attribute final-answer effects; and a line of failure-prefix / recoverability /
+process-supervision work (failure-prefix conditioning, ELPO, Deep Dense Exploration,
+value/process-reward models) summarizes a prefix by a success *scalar* to train, search,
+or localize errors. `reachscan` retains the **full answer field** instead of a scalar,
 applies it to a **designated target's** sustained closure, and — in the paper — closes
-the loop with fresh-path vs. original-tail reopening/reclosure. It is **black-box** and
-measurement-oriented, where the closest commitment-localization work (e.g. *The Point of
-No Return*) and behavior-prediction-for-steering work (e.g. *Predicting Future
-Behaviors*) operate white-box on internal representations. It also sits alongside
-chain-of-thought faithfulness (Turpin et al. 2023; Lanham et al. 2023),
-self-consistency (Wang et al. 2023), and process supervision (Lightman et al. 2023).
+the loop with fresh-path vs. original-tail reopening/reclosure. The closest black-box
+analog, *The Point of No Return*, shares the same prefix-resampling primitive but
+localizes *deceptive-outcome* probability rather than a designated target's reachability
+and reopening; behavior-prediction-for-steering work such as *Predicting Future
+Behaviors* instead operates white-box on internal representations (training activation
+probes). It also sits alongside chain-of-thought faithfulness (Turpin et al. 2023;
+Lanham et al. 2023), self-consistency (Wang et al. 2023), and process supervision
+(Lightman et al. 2023).
 See the paper's related-work section for the full treatment.
 
 ## License
