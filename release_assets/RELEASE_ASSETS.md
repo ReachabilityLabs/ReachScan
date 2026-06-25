@@ -1,5 +1,7 @@
 # Current public release assets
 
+> ⚠️ Last public release snapshot — Core Article RC8 / Evidence Archive RC2. The current prepared stack is RC10 / RC3 (staging), DOIs pending; this file will be updated with the RC10/RC3 assets and DOIs when they are deposited.
+
 The machine-readable registry is `release_manifest.json`. The following files constitute the current publication family:
 
 - `existence_is_not_reachability_core_research_article_v1_0_rc8.pdf`

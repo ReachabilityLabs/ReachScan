@@ -1,6 +1,7 @@
 {
   "release_family": "Existence Is Not Reachability / ReachScan",
   "generated": "2026-06-21",
+  "snapshot_status": "last_public_snapshot: Core Article RC8 / Evidence Archive RC2; current prepared stack RC10/RC3 staging, DOIs pending",
   "products": [
     {"name":"Core Research Article","version":"1.0-RC8","file":"existence_is_not_reachability_core_research_article_v1_0_rc8.pdf","sha256":"0a5c16f76e42f14b6c815418bdb617c97695af55e073c8c2d52face84bce1313"},
     {"name":"Supplementary Evidence Appendix","version":"1.0-RC8","file":"existence_is_not_reachability_supplementary_evidence_appendix_v1_0_rc8.pdf","sha256":"5331c10a53f69f95927e523a4f65c5478da8275103e9014d95ddee35e681f33b"},
