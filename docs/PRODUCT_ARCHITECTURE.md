@@ -18,5 +18,5 @@ Replace these after public deposit:
 - arXiv: `PENDING`
 - Technical Report DOI: `PENDING`
 - Evidence Archive DOI: `PENDING`
-- Software DOI: concept DOI (all versions, always resolves to latest) `10.5281/zenodo.20808922`. Per-version DOIs: v0.2.4 = `10.5281/zenodo.20808923`; v0.3.x = PENDING (assigned when a v0.3.x deposit is made).
+- Software DOI: concept DOI (all versions, always resolves to latest) `10.5281/zenodo.20808922`. Per-version DOIs: v0.2.4 = `10.5281/zenodo.20808923`; v0.3.5 = `10.5281/zenodo.20837723`.
 - OSF program URL: `PENDING`
