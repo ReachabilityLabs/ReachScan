@@ -1,25 +1,76 @@
 # reachscan
 
-**Measure the future field of a committed reasoning prefix.**
+**A black-box instrument for measuring which answer-futures remain reachable from a committed LLM reasoning prefix.**
 
 ![tests](https://github.com/ReachabilityLabs/ReachScan/actions/workflows/ci.yml/badge.svg)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20808922.svg)](https://doi.org/10.5281/zenodo.20808922)
 
-Endpoint accuracy collapses a model's behavior into one label. `reachscan` measures
-something richer: given a *committed* reasoning prefix, what is the distribution of
-answer-futures the model can still reach — and how does target reachability change
-as commitment deepens? It is a small, reusable instrument for studying *reasoning
-failure as a loss of reachable future under commitment.*
+`reachscan` freezes a reasoning prefix, samples fresh continuations, and treats the
+resulting distribution of terminal answers as a **future field**. It reports how much
+of that field still lands on a target answer — and how that reachability changes as the
+model commits deeper — under an explicit model, sampler, prefix, and answer-lens
+contract. Endpoint accuracy collapses behavior into one label; `reachscan` measures the
+*reachable distribution behind* that label, before the answer is exposed.
 
-This is the language-model sibling of the oracle-backed random 3-SAT
-[constructive-accessibility instrument](https://doi.org/10.5281/zenodo.19225548).
-The two share a measurement grammar (committed state → reachable future); the
-substrates and guarantees differ.
+## What the instrument revealed
 
-> Status: v0.3.5. The engine and reference components are tested. The worked example
-> reproduces the *shape* of the flagship result on a mock or a small live model; it
-> is not a release of production data.
+Using `reachscan`, the associated paper demonstrates a closed loop of **answer
+foreclosure** — a designated answer goes from reachable to effectively foreclosed
+*before it is expressed*, the transition can be localized, and the field can be reopened
+and re-closed by different downstream paths:
+
+```text
+   reachable ──▶ foreclosed ──▶ corrected / reopened ──┬─▶ fresh path stays open
+ (target alive)  (before the                           │
+                  answer is written)                   └─▶ original path re-closes
+```
+
+That is the meaning of **existence is not reachability**: a target answer can be
+reachable from one measured state, *effectively unreachable* from a committed wrong
+state under the same rollout contract, and *reopenable* from a corrected state. The
+contribution is the complete cycle — measure, discriminate, localize, perturb, remeasure
+— not any single step, and it claims neither model-universal generality nor an internal
+causal mechanism.
+
+> **Repository scope.** This repo is the reusable measurement **core** — enough to
+> understand the method and run a scan on your own model and task. The paper's grouped
+> experiments, token-level localization, perturbation study, and canonical evidence live
+> in the **Evidence and Reproducibility Archive**, not here.
+
+## What the paper shows
+
+On Qwen2.5-Math floor-sum reasoning, with this instrument:
+
+- **Structural foreclosure (field level).** The prompt-only field is already biased
+  toward a target-excluding arithmetic family; commitment depletes target-compatible
+  mass *before* a particular wrong atom dominates, and the answer field becomes nearly
+  fixed while surface reasoning stays diverse — closure of the correct region, selection
+  of a wrong answer, and collapse of textual diversity are *three separable events*.
+- **Diagnosticity (replicated).** Across 20 correct-source vs 20 wrong-source prefixes,
+  the arms overlap at mid-depth but separate by **+0.732** at the deepest cut (D09); a
+  disjoint-seed run reproduces the profile, and a prospectively selected same-family
+  replication (D07) yields **+0.802** (95% trace-bootstrap CI **[+0.695, +0.894]**).
+- **Pre-expression timing.** Token-level rescanning localizes foreclosure across 18
+  wrong traces to a median **4.5-token** window, with a median **170-token** interval
+  between the loss of target reach and the moment the answer is emitted.
+- **Morphology.** A reach–entropy view distinguishes diffuse **shatter** from
+  concentrated **capture** at similarly low target reach — target viability is *not* the
+  same as entropy or answer concentration, which is why the full field is retained
+  rather than reduced to one scalar.
+- **Functional validation.** In five localized traces, a corrective splice reopens the
+  target in **four**; matched and scrambled controls generally do not; fresh continuation
+  preserves the repair through 32 tokens in **four**; and replaying the original
+  downstream path re-closes it in **all five**.
+
+The full argument and figures are in the paper (*Existence Is Not Reachability*); the
+canonical data and constructors are in the Evidence and Reproducibility Archive. The
+worked example in *this* repo **illustrates the readout shape** on a mock or small live
+model — the committed demo is a mock fixture, not a result, and this is not a release of
+the paper's production data.
+
+> Status: v0.3.5 ([Zenodo](https://doi.org/10.5281/zenodo.20837723)). The engine and
+> reference components are tested.
 
 ## Install
 
@@ -67,6 +118,23 @@ reports, per depth:
   target reachability, which is target-*relative*)
 - **answer yield / truncation / cap-hits** — the denominator audit (`hit_token_cap` flags every generation that filled `max_new_tokens`). Reported as `ok_answers`; the legacy `numeric` column is kept as an alias in v0.2.x and means `status == "ok"` extracted answers, not necessarily numeric values.
 - **Wilson intervals** on the rates
+
+### Raw field vs projected field (read this once)
+
+The measurement object is the **full terminal-answer distribution**. Everything else is
+a *view* of it. The repo keeps these distinct, and so should you:
+
+- **raw answer field** — the distribution over actual extracted answers, reconstructable
+  from `parsed_answer` / `value` in the per-rollout **receipts**.
+- **projected field** — the declared bucket distribution in `summary_by_depth.csv`,
+  produced by `projection.project(answer)` (residue classes under `ModuloProjection`,
+  answer atoms under `ExactMatch`).
+- **target-set readout** — mass on the declared target class (`R_T`).
+- **exact-outcome rate** — mass on the exact accepted answer.
+
+A projection is a coarse-graining; it never *replaces* the raw field. The paper's
+shatter-vs-capture morphology only exists because the full field is retained, not
+reduced to one scalar.
 
 ### Formal object
 
@@ -309,13 +377,20 @@ own sources, and that apparatus is not included here.
 
 ## Related work
 
-`reachscan` sits alongside work on chain-of-thought faithfulness (e.g. Turpin et
-al. 2023; Lanham et al. 2023), self-consistency (Wang et al. 2023), and process
-supervision (Lightman et al. 2023), and complements ongoing work on reasoning
-faithfulness. Where those read or score the reasoning text, `reachscan` measures a
-black-box *behavioral field* — the distribution of futures reachable from a
-committed prefix — reporting reachability rather than accuracy, before the answer
-is exposed.
+`reachscan` builds directly on prefix-resampling and tokenwise outcome-distribution
+work — Forking Paths and token-level "road not taken" uncertainty study alternate
+futures from a state; Thought Anchors and Thought Branches resample around reasoning
+steps to attribute final-answer effects; failure-prefix / recoverability work
+(ELPO, Deep Dense Exploration, failure-prefix conditioning) reduces a prefix to a
+success *scalar*. `reachscan` retains the **full answer field** instead of a scalar,
+applies it to a **designated target's** sustained closure, and — in the paper — closes
+the loop with fresh-path vs. original-tail reopening/reclosure. It is **black-box** and
+measurement-oriented, where the closest commitment-localization work (e.g. *The Point of
+No Return*) and behavior-prediction-for-steering work (e.g. *Predicting Future
+Behaviors*) operate white-box on internal representations. It also sits alongside
+chain-of-thought faithfulness (Turpin et al. 2023; Lanham et al. 2023),
+self-consistency (Wang et al. 2023), and process supervision (Lightman et al. 2023).
+See the paper's related-work section for the full treatment.
 
 ## License
 
@@ -327,15 +402,29 @@ requested per the NOTICE, not restricted beyond Apache-2.0.
 
 ```bibtex
 @software{nothem2026reachscan,
-  author = {Michael Richard Nothem},
-  title  = {reachscan: a committed-prefix future-field measurement instrument},
-  year   = {2026},
-  url    = {https://github.com/ReachabilityLabs/ReachScan}
+  author  = {Michael Richard Nothem},
+  title   = {reachscan: a committed-prefix future-field measurement instrument},
+  version = {0.3.5},
+  year    = {2026},
+  doi     = {10.5281/zenodo.20837723},
+  url     = {https://github.com/ReachabilityLabs/ReachScan}
 }
 ```
 
+Cite the **version DOI** `10.5281/zenodo.20837723` to point at exactly v0.3.5; the
+**concept DOI** `10.5281/zenodo.20808922` always resolves to the latest version.
+
 ## Associated research products
 
-This software is one component of the *Existence Is Not Reachability* publication family. The concise paper states the central scientific result; the Full Technical Report contains the complete argument and audit record; the Evidence and Reproducibility Archive contains the canonical evidence and constructors. See `docs/PRODUCT_ARCHITECTURE.md` and `release_assets/release_manifest.json`.
+This software is one component of the *Existence Is Not Reachability* publication
+family. The concise paper states the central scientific result; the Full Technical
+Report contains the complete argument and audit record; the Evidence and
+Reproducibility Archive contains the canonical evidence and constructors. See
+`docs/PRODUCT_ARCHITECTURE.md` and `release_assets/release_manifest.json`.
 
-Archive v1.0-RC2 includes complete per-rollout R006 repaired-path evidence. The reusable software is v0.3.x: the v0.2.x measurement core plus the projection-pack, prediction-contract, and run-contract layers (see `CHANGELOG.md`); earlier callers still work.
+It is also the language-model sibling of the oracle-backed random 3-SAT
+[constructive-accessibility instrument](https://doi.org/10.5281/zenodo.19225548): the
+two share one measurement grammar — **committed state → reachable future** — across a
+stochastic language substrate and an exact combinatorial one. That shared grammar is the
+broader Reachability Labs research program; this article does not depend on it for its
+result.
