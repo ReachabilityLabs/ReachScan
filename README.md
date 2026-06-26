@@ -325,17 +325,56 @@ requested per the NOTICE, not restricted beyond Apache-2.0.
 
 ## Citation
 
+`reachscan` is one component of the *Existence Is Not Reachability* publication
+family. Cite the part you use: the research through the paper, the tool through
+the software, and the data/reproduction layer through the evidence archive.
+
+| Component | Version DOI | Concept DOI (always latest) |
+|---|---|---|
+| Paper - *Existence Is Not Reachability* (v1.0-RC10) | `10.5281/zenodo.20872623` | `10.5281/zenodo.20872622` |
+| Evidence and Reproducibility Archive (v1.0-RC3) | `10.5281/zenodo.20872305` | `10.5281/zenodo.20872304` |
+| `reachscan` software (v0.3.5) | `10.5281/zenodo.20837723` | `10.5281/zenodo.20808922` |
+
+Related: the random 3-SAT constructive-accessibility sibling instrument is
+archived at `10.5281/zenodo.19225548`.
+
 ```bibtex
+@misc{nothem2026existence,
+  author    = {Nothem, Michael Richard},
+  title     = {Existence Is Not Reachability: Measuring Answer Foreclosure from Committed {LLM} Prefixes},
+  year      = {2026},
+  publisher = {Zenodo},
+  version   = {1.0-RC10},
+  doi       = {10.5281/zenodo.20872623},
+  url       = {https://doi.org/10.5281/zenodo.20872623},
+  note      = {Concept DOI: 10.5281/zenodo.20872622}
+}
+
+@dataset{nothem2026reachscanarchive,
+  author    = {Nothem, Michael Richard},
+  title     = {Reach-Scan Evidence and Reproducibility Archive for Existence Is Not Reachability},
+  year      = {2026},
+  publisher = {Zenodo},
+  version   = {1.0-RC3},
+  doi       = {10.5281/zenodo.20872305},
+  url       = {https://doi.org/10.5281/zenodo.20872305},
+  note      = {Concept DOI: 10.5281/zenodo.20872304}
+}
+
 @software{nothem2026reachscan,
-  author = {Michael Richard Nothem},
-  title  = {reachscan: a committed-prefix future-field measurement instrument},
-  year   = {2026},
-  url    = {https://github.com/ReachabilityLabs/ReachScan}
+  author    = {Nothem, Michael Richard},
+  title     = {reachscan: A Committed-Prefix Future-Field Measurement Instrument},
+  year      = {2026},
+  publisher = {Zenodo},
+  version   = {0.3.5},
+  doi       = {10.5281/zenodo.20837723},
+  url       = {https://github.com/ReachabilityLabs/ReachScan},
+  note      = {Concept DOI: 10.5281/zenodo.20808922}
 }
 ```
 
 ## Associated research products
 
-This software is one component of the *Existence Is Not Reachability* publication family. The concise paper states the central scientific result; the Full Technical Report contains the complete argument and audit record; the Evidence and Reproducibility Archive contains the canonical evidence and constructors. See `docs/PRODUCT_ARCHITECTURE.md` and `release_assets/release_manifest.json`.
+This software is one component of the *Existence Is Not Reachability* publication family. The concise paper states the central scientific result; the Full Technical Report contains the complete argument and audit record; the Evidence and Reproducibility Archive contains the canonical evidence and constructors. See `docs/PRODUCT_ARCHITECTURE.md` for the current DOI map.
 
-Archive v1.0-RC2 includes complete per-rollout R006 repaired-path evidence. The reusable software is v0.3.x: the v0.2.x measurement core plus the projection-pack, prediction-contract, and run-contract layers (see `CHANGELOG.md`); earlier callers still work.
+Evidence Archive v1.0-RC3 (`10.5281/zenodo.20872305`) includes the canonical evidence and reproducibility package for the RC10 paper line. The reusable software is v0.3.x: the v0.2.x measurement core plus the projection-pack, prediction-contract, and run-contract layers (see `CHANGELOG.md`); earlier callers still work. The `release_assets/` directory remains the older RC8/RC2 release-assets snapshot until a separate release-assets refresh is made.
